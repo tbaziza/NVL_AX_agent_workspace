@@ -75,6 +75,47 @@ simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tec
 | `doa_validator_override.pm` | Override validator for DOA tests | `verif/emu/plugins/emurun/` |
 | `pcd.pm` | PCD fuse/softstrap generation | `output/pchlp/emu/plugins/emurun/` |
 
+## How to Know a DOA Test Passed
+
+After test submission, check results **in this order**. ALL must pass:
+
+```bash
+# Navigate to the test workarea (find it from simregress output or trex)
+cd <test_workarea>
+
+# 1. Quick verdict — overall result
+cat results.log
+# ✅ Expected: "PASSED"
+# ❌ If "FAILED" — proceed to check which stage failed
+
+# 2. Logbook stage table — ALL stages must be PASS
+zgrep -A 10 "Stage.*Elapsed.*Status" logbook.log.gz | tail -6
+# ✅ Expected: Every stage (Test build, Model run, Creating RPT, Post processing) shows PASS
+# ⚠️ WARNING: emurun PASS alone does NOT mean overall PASS
+
+# 3. emurun emulation result
+grep -i "PASSED\|FAILED" emurun.log | tail -3
+# ✅ Expected: "PASSED"
+
+# 4. Hidden assertion check (SVA / TLM_POST traps)
+grep -c "error\|fail" assertion_failures.log zse_assertions.log 2>/dev/null
+# ✅ Expected: 0 or files don't exist
+
+# 5. Core-level pass markers (spacedoa-specific)
+zgrep "EBX=0xaced" logbook.log.gz
+# ✅ Expected: All cores report 0xaced (PASS COMPLETE)
+```
+
+**Common traps:**
+- emurun says **PASSED** but `Post processing` stage **FAILED** → check SVA assertions
+- emurun says **PASSED** but `Creating RPT` **FAILED** → tracker parsing issue (may be waived with `-not_fail_on`)
+- Test **timed out** (hit cycle limit) → check if `-c 11000us` override was applied
+
+**Quick one-liner verdict:**
+```bash
+[ -f results.log ] && grep -q "PASSED" results.log && echo "✅ TEST PASSED" || echo "❌ TEST FAILED — check logbook stage table"
+```
+
 ## Current Test Status (bundle1106)
 
 | Test | Last Run | Result | Notes |

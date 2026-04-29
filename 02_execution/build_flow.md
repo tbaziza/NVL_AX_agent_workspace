@@ -91,6 +91,42 @@ grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -id
 | `zTimeFpga` | ~30 min | FPGA timing |
 | `zAuditReport` | ~7 min | audit |
 
+## How to Know Compilation Passed Successfully
+
+Run these checks **in order**. ALL must pass to confirm a successful build:
+
+```bash
+# 1. Shadow files — ALL 19 must exist (each represents a completed stage)
+ls .shadow/ | wc -l
+# ✅ Expected: 19
+# ❌ If < 19: build did not complete. Identify the missing stage.
+
+# 2. U0-U3 backend directories (FPGA partitions were placed & routed)
+ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
+# ✅ Expected: U0, U1, U2, U3
+
+# 3. MuDb info file non-empty (model database assembled)
+wc -c output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/MuDb/equis/info
+# ✅ Expected: non-zero byte count
+
+# 4. No missing shared library dependencies
+ldd output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
+# ✅ Expected: EMPTY output (no missing libs)
+
+# 5. readmem.dump is a regular file (not a symlink to itself)
+file output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/readmem.dump
+# ✅ Expected: "ASCII text" or "data"
+
+# 6. No failure_info.log from last build run
+ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/$(ls -t output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/ | head -1)/failure_info.log 2>/dev/null
+# ✅ Expected: "No such file" (file should NOT exist)
+```
+
+**Quick one-liner verdict:**
+```bash
+[ $(ls .shadow/ | wc -l) -eq 19 ] && echo "✅ COMPILATION PASSED" || echo "❌ COMPILATION INCOMPLETE"
+```
+
 ## Post-Build Steps (CRITICAL)
 
 After successful `fe_be` completion:
