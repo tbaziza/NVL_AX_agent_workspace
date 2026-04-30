@@ -18,15 +18,20 @@
 # 1. Go to your model workarea
 cd <your_model_workarea>
 
-# 2. Launch Copilot CLI
-copilot
+# 2. Set up the model (IMPORTANT — must be done before anything else)
+cth_psetup <your_stepping>
 
-# 3. Select the agent
+# 3. Launch Copilot CLI
+/p/hdk/cad/copilot/latest/copilot
+
+# 4. Select the agent
 /agent sle_emulation_agent
 
-# 4. Start working
+# 5. Start working
 You: compile the model
 ```
+
+> ⚠️ **You must set up the model with `cth_psetup` before launching Copilot CLI.** The agent relies on the environment that `cth_psetup` configures.
 
 That's it. You're ready to go.
 
