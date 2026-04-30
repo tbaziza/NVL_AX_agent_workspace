@@ -7,7 +7,7 @@ applyTo: "**"
 ## Command — Start Fresh Build
 
 ```bash
-cd /nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106
+cd $MODEL_ROOT   # your model workarea (set by cth_psetup or manually)
 grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate
 ```
 

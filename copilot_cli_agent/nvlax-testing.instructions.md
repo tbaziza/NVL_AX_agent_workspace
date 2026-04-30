@@ -9,7 +9,7 @@ Run DOA tests ONLY after compilation passes and post-build completes.
 ## Command — Submit DOA Tests
 
 ```bash
-cd /nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106
+cd $MODEL_ROOT   # your model workarea (set by cth_psetup or manually)
 simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tech zse5 \
   -no_compress EMUL_QSLOT=/prj/sv/nvl/emu/interactive -trex- \
   -P zsc11_express -Q /IVE/NVL/emu \

@@ -5,11 +5,11 @@ An AI agent that automates the compile → test → debug → fix cycle for NVL-
 ## Quick Start
 
 ```bash
-cd /nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106
+cd <your_model_workarea>   # e.g. /nfs/site/disks/.../models/integrate_bundle1106
 copilot
 ```
 
-That's it. The agent loads automatically. Start with:
+That's it. The agent loads automatically from any model workarea that has `.github/instructions/`. Start with:
 
 ```
 You: compile the model
@@ -22,7 +22,7 @@ You: this test failed, debug it
 Add this line to your `~/.bashrc`:
 
 ```bash
-export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="/nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106/.github/instructions"
+export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="<your_model_workarea>/.github/instructions"
 ```
 
 Then reload and run from anywhere:
