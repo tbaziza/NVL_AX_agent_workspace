@@ -86,7 +86,7 @@ flowchart TD
     COMPILE["🔨 STEP 1 — COMPILE\n━━━━━━━━━━━━━━━━━━━━━\ngrdlbuild\n14 build stages · ~50 hrs\n6 pass checks"]
     COMPILE -->|"✅ pass"| POSTBUILD
 
-    POSTBUILD["🔧 STEP 2 — POST-BUILD\n━━━━━━━━━━━━━━━━━━━━━\npost_zcui\nfix_zse5_libs.sh\nlibrary symlink repair"]
+    POSTBUILD["🔧 STEP 2 — POST-BUILD\n━━━━━━━━━━━━━━━━━━━━━\npost_zcui\nlibrary symlink repair"]
     POSTBUILD --> TEST
 
     TEST["🧪 STEP 3 — DOA TEST\n━━━━━━━━━━━━━━━━━━━━━\nsimregress\nspacedoa / spacex · ~4-5 hrs\n5 pass checks"]
