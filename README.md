@@ -102,6 +102,10 @@ flowchart TD
 
     DEBUG["🐛 STEP 4 — DEBUG\n━━━━━━━━━━━━━━━━━━━━━\n1. Detect failure phase\n2. Collect symptoms from logs\n3. Search 57 known bugs\n4. Score & match best fix"]
     DEBUG -->|"🔁 fix applied — re-run"| COMPILE
+    DEBUG -->|"📝 new bug found"| DOCUMENT
+
+    DOCUMENT["📄 STEP 5 — DOCUMENT\n━━━━━━━━━━━━━━━━━━━━━\nCreate new BUG file\nYAML frontmatter + fix\nAdd to Knowledge Base"]
+    DOCUMENT -->|"🔁 re-run"| COMPILE
 
     DONE([🎉 Model Ready])
 
@@ -109,12 +113,15 @@ flowchart TD
     style POSTBUILD fill:#1b4332,stroke:#6abf69,stroke-width:3px,color:#fff
     style TEST fill:#5c3d0e,stroke:#f0ad4e,stroke-width:3px,color:#fff
     style DEBUG fill:#6b1d1d,stroke:#ff6b6b,stroke-width:3px,color:#fff
+    style DOCUMENT fill:#4a1a6b,stroke:#b366e0,stroke-width:3px,color:#fff
     style DONE fill:#1b6b1b,stroke:#5cb85c,stroke-width:3px,color:#fff
     style START fill:#333,stroke:#aaa,stroke-width:2px,color:#fff
 
     linkStyle 4 stroke:#ff4444,stroke-width:2px,stroke-dasharray:5
     linkStyle 5 stroke:#ff4444,stroke-width:2px,stroke-dasharray:5
     linkStyle 6 stroke:#ff4444,stroke-width:2px,stroke-dasharray:5
+    linkStyle 7 stroke:#b366e0,stroke-width:2px,stroke-dasharray:5
+    linkStyle 8 stroke:#b366e0,stroke-width:2px,stroke-dasharray:5
 ```
 
 ---
@@ -230,5 +237,15 @@ Inside Copilot CLI, run these commands:
 |------|------|
 | tbaziza | Owner |
 | michaeleldin | Editor |
+| yarombar | Editor |
 | mtzola | Reader |
 | vmeskin | Reader |
+| ofersan5 | Reader |
+
+---
+
+<div align="center">
+
+**Created by Tomer Baziza** · NVL-AX Silicon Validation · Intel
+
+</div>
