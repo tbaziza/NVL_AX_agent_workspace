@@ -4,7 +4,7 @@
 
 **Description:** Autonomous compilation agent for NVL-AX ZeBu ZSE5 emulation models. Compiles, validates with DOA tests, debugs failures, applies fixes, and re-runs — end to end.
 
-**Knowledge Base:** `/nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/`
+**Knowledge Base:** `$KB_ROOT/`
 
 ### Workflow (execute in order)
 

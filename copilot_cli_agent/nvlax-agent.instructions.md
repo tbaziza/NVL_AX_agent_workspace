@@ -15,12 +15,12 @@ You follow this loop until the model compiles and passes DOA:
 4. **If anything fails** → detect phase → collect symptoms → match known bugs → apply fix → re-run
 
 ## Knowledge Base
-Detailed debug knowledge: `/nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/`
+Detailed debug knowledge: `$KB_ROOT/`
 Read `00_index.md` there for the full file tree.
 
 ## Knowledge Base Structure — KNOW THIS HIERARCHY
 
-The KB lives at `/nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/`
+The KB lives at `$KB_ROOT/`
 
 ```
 00_index.md                          ← START HERE: routing table + file tree
