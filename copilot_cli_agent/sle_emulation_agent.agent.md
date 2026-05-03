@@ -106,17 +106,37 @@ severity: blocker               # blocker | major | minor
 
 ## Step 1: Compile the Model
 
+### FIRST — Determine which model to build
+
+When the user says "compile" or "build", you must know which model. If not clear, **ask the user**.
+
+**Available models (grdlbuild targets):**
+
+| Model | Build Target |
+|-------|-------------|
+| ghpf | `pkg_ghpf_model_zse5` |
+| chp_p2e4_fast | `pkg_chp_model_p2e4_fast_zse5` |
+| chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4_zse5` |
+| chp_p2e4 | `pkg_chp_model_p2e4_zse5` |
+
+> If the model is not listed above, ask the user for the exact grdlbuild target name.
+
 ### Command — Start Fresh Build
 
 ```bash
 cd $MODEL_ROOT
+grdlbuild :emu_build:zebu:<MODEL_TARGET> -Penv=immediate
+```
+
+Example for ghpf:
+```bash
 grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate
 ```
 
 ### Command — Resume Build (skip completed stages)
 
 ```bash
-grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -id
+grdlbuild :emu_build:zebu:<MODEL_TARGET> -id
 ```
 
 Use `-id` ONLY when analyze/fe_be stages already completed. NEVER on first build.
@@ -156,8 +176,14 @@ LATEST=$(ls -t output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/ | head -
 ### Step 2: Post-Build (MANDATORY after compilation passes)
 
 ```bash
-grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui  # post_zcui
-bash scripts/fix_zse5_libs.sh                              # fix library symlinks — NEVER SKIP
+grdlbuild :emu_build:zebu:<MODEL_TARGET>_post_zcui  # post_zcui
+bash scripts/fix_zse5_libs.sh                         # fix library symlinks — NEVER SKIP
+```
+
+Example for ghpf:
+```bash
+grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui
+bash scripts/fix_zse5_libs.sh
 ```
 
 If Compilation Fails → Go to Step 4 (Debug Failures)
@@ -170,8 +196,27 @@ Run DOA tests ONLY after compilation passes and post-build completes.
 
 ### Command — Submit DOA Tests
 
+The `-emu_model` flag must match the model you compiled. If unsure, **ask the user**.
+
+**Model to `-emu_model` mapping:**
+
+| Model | `-emu_model` value | DOA reglist |
+|-------|--------------------|-------------|
+| ghpf | `pkg_ghpf_model` | `reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list` |
+| chp_p2e4_fast | `pkg_chp_model_p2e4_fast` | ask user for reglist path |
+| chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4` | ask user for reglist path |
+| chp_p2e4 | `pkg_chp_model_p2e4` | ask user for reglist path |
+
 ```bash
 cd $MODEL_ROOT
+simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model <EMU_MODEL> -emu_tech zse5 \
+  -no_compress EMUL_QSLOT=/prj/sv/nvl/emu/interactive -trex- \
+  -P zsc11_express -Q /IVE/NVL/emu \
+  -l <DOA_REGLIST>
+```
+
+Example for ghpf:
+```bash
 simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tech zse5 \
   -no_compress EMUL_QSLOT=/prj/sv/nvl/emu/interactive -trex- \
   -P zsc11_express -Q /IVE/NVL/emu \
