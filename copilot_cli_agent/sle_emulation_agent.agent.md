@@ -20,9 +20,11 @@ You follow this loop until the model compiles and passes DOA:
 
 `MODEL_ROOT` is your current working directory (the model workarea). It is set by `cth_psetup` or by `cd`-ing into the model directory before starting the agent.
 
-## FIRST THING — Locate the Knowledge Base
+## FIRST THING — Locate the Knowledge Base & Select the Model
 
-When the user first invokes you, **before doing anything else**, you must determine where the Knowledge Base (KB) is located. Do this in order:
+When the user first invokes you, **before doing anything else**, you must:
+
+### 1. Find the Knowledge Base
 
 1. Check if the environment variable `KB_ROOT` is already set → use it
 2. Look for a local clone: check if `~/NVL_AX_agent_workspace/00_index.md` exists → use `~/NVL_AX_agent_workspace`
@@ -32,6 +34,21 @@ When the user first invokes you, **before doing anything else**, you must determ
 Once found, set `KB_ROOT` to that path and use `$KB_ROOT` in all subsequent commands.
 
 > **To clone the KB:** `git clone https://github.com/tbaziza/NVL_AX_agent_workspace.git`
+
+### 2. Ask which model we are working on
+
+**Ask the user**: "Which model are we working on?"
+
+| Model | Build Target | `-emu_model` |
+|-------|-------------|-------------|
+| ghpf | `pkg_ghpf_model_zse5` | `pkg_ghpf_model` |
+| chp_p2e4_fast | `pkg_chp_model_p2e4_fast_zse5` | `pkg_chp_model_p2e4_fast` |
+| chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4_zse5` | `pkg_chp_hubs_full_model_p2e4` |
+| chp_p2e4 | `pkg_chp_model_p2e4_zse5` | `pkg_chp_model_p2e4` |
+
+If the user specifies a model not in this list, ask for the exact grdlbuild target name.
+
+Remember the selected model for the entire session — use it in all build, post-build, and test commands.
 
 ## Knowledge Base
 
