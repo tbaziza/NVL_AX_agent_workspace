@@ -10,7 +10,7 @@ tags: [monitoring, metrics, build, emulation, disk, health]
 
 ### fe_be Progress
 ```bash
-ZSE5="output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5"
+ZSE5="output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5"
 LOGDIR="$ZSE5/log/<TIMESTAMP>"
 
 # Current stage
@@ -38,7 +38,7 @@ echo "=== disk ===" && df -h /nfs/site/disks/ive_sle_zsc11_tbaziza | tail -1
 
 ### Shadow File Progress
 ```bash
-ls -lt output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/
+ls -lt output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/
 # Each new shadow file = one stage completed
 # 19 files = fully built
 ```

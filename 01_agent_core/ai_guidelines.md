@@ -61,13 +61,15 @@ When you encounter a situation where you don't know the correct shell command:
 
 ### Critical DOA Test Rules
 - **EMUL_QSLOT**: ALWAYS use `/prj/sv/nvl/emu/interactive` — NEVER `/prj/sv/nvl/showstopper` (see BUG-025: showstopper has `user_max_waiting=2` which blocks simultaneous DOA jobs)
-- **simregress command** — use EXACTLY this (do not modify flags without user approval):
+- **simregress command** — use EXACTLY this pattern (do not modify flags without user approval):
   ```bash
-  simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tech zse5 \
+  simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model <EMU_MODEL> -emu_tech zse5 \
     -no_compress EMUL_QSLOT=/prj/sv/nvl/emu/interactive -trex- \
     -P zsc11_express -Q /IVE/NVL/emu \
-    -l reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list
+    -l reglist/nvlsi7_n2p/emu/doa_<MODEL_TARGET>.list
   ```
+  > **Note:** Replace `<EMU_MODEL>` and `<MODEL_TARGET>` with the model you are testing.
+  > Example for ghpf: `-emu_model pkg_ghpf_model` and `-l reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list`
 - **NEVER use `-local` flag** for DOA tests — Zebu hardware requires NB farm submission (see BUG-001)
 - **ALWAYS pass `-P zsc11_express -Q /IVE/NVL/emu`** explicitly — omitting causes queue collision (see BUG-003)
 
@@ -83,7 +85,8 @@ When you encounter a situation where you don't know the correct shell command:
 2. Check disk space: `df -h /nfs/site/disks/ive_sle_zsc11_tbaziza | tail -1`
 3. Check Kerberos: `klist 2>&1 | grep -E "Expires|>>>"`
 4. Check what's running: `nbq -u tbaziza 2>/dev/null | head -10`
-5. Check last build status: `ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/ | wc -l` (19 = complete)
+5. Check last build status: `ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/ | wc -l` (19 = complete)
+   > Example for ghpf: `ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/ | wc -l`
 
 ## Expert Debug Heuristics (Extracted from ai_picker_sle Reference)
 

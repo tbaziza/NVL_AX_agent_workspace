@@ -84,8 +84,8 @@ Read the test logs and extract:
 ### Step 2: Check Existing KB
 Before creating a new file, search:
 ```bash
-grep -rl "symptom_keyword" /nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/05_knowledge_and_debugging/known_bugs_and_fixes/
-grep -i "symptom_keyword" /nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/05_knowledge_and_debugging/common_patterns.md
+grep -rl "symptom_keyword" $KB_ROOT/05_knowledge_and_debugging/known_bugs_and_fixes/
+grep -i "symptom_keyword" $KB_ROOT/05_knowledge_and_debugging/common_patterns.md
 ```
 If a match exists → update the existing file rather than creating a duplicate.
 
@@ -99,7 +99,7 @@ Use `bug_template.md` and MUST include:
 ### Step 4: Validate Scoring
 Run the phase detection script against the original failing test:
 ```bash
-/nfs/site/disks/ive_sle_zsc11_tbaziza/NVL_AX_agent_workspace/05_knowledge_and_debugging/run_phase_detection_nvlax.sh <test_directory>
+$KB_ROOT/05_knowledge_and_debugging/run_phase_detection_nvlax.sh <test_directory>
 ```
 The new bug file should rank in the **top 3** for its source test failure.
 

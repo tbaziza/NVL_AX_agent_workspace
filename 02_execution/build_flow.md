@@ -7,8 +7,20 @@ tags: [build, compilation, grdlbuild, zebu, resume, stages]
 # Build Flow — Compilation & Resume Instructions
 
 ## Overview
-This workspace compiles the `pkg_ghpf_model` Zebu emulation model for the `nvlsi7_n2p` DUT
+This workspace compiles Zebu emulation models for the `nvlsi7_n2p` DUT
 on the ZSE5 Zebu platform. The build system is `grdlbuild` (Gradle wrapper over DVB/make).
+
+> **Multi-model support:** This agent supports multiple models. Replace `<MODEL_TARGET>` with
+> the Gradle target suffix for the model you are building (e.g., `pkg_ghpf_model_zse5`).
+
+### Supported Models
+
+| Gradle Target | `-emu_model` Flag | Short Name |
+|---------------|-------------------|------------|
+| `pkg_ghpf_model_zse5` | `pkg_ghpf_model` | ghpf |
+| `pkg_chp_model_p2e4_fast_zse5` | `pkg_chp_model_p2e4_fast` | chp_p2e4_fast |
+| `pkg_chp_hubs_full_model_p2e4_zse5` | `pkg_chp_hubs_full_model_p2e4` | chp_hubs_full_p2e4 |
+| `pkg_chp_model_p2e4_zse5` | `pkg_chp_model_p2e4` | chp_p2e4 |
 
 ## Pre-Compilation Steps
 
@@ -28,7 +40,8 @@ klist 2>&1 | grep -E "Expires|>>>"
 ```bash
 # Full build from scratch (takes ~50+ hours)
 cd /nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106
-grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate
+grdlbuild :emu_build:zebu:<MODEL_TARGET> -Penv=immediate
+# Example for ghpf: grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate
 ```
 
 ## Resume / Restart from Zebu Stage
@@ -36,7 +49,8 @@ grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate
 ```bash
 # Use -id (ignore deps) to restart from the Zebu compilation stage
 # ONLY use AFTER analyze/fe_be have already started
-grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -id
+grdlbuild :emu_build:zebu:<MODEL_TARGET> -id
+# Example for ghpf: grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -id
 ```
 
 **When to use `-id`**:
@@ -102,23 +116,23 @@ ls .shadow/ | wc -l
 # ❌ If < 19: build did not complete. Identify the missing stage.
 
 # 2. U0-U3 backend directories (FPGA partitions were placed & routed)
-ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
+ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
 # ✅ Expected: U0, U1, U2, U3
 
 # 3. MuDb info file non-empty (model database assembled)
-wc -c output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/MuDb/equis/info
+wc -c output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/MuDb/equis/info
 # ✅ Expected: non-zero byte count
 
 # 4. No missing shared library dependencies
-ldd output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
+ldd output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
 # ✅ Expected: EMPTY output (no missing libs)
 
 # 5. readmem.dump is a regular file (not a symlink to itself)
-file output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/readmem.dump
+file output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/readmem.dump
 # ✅ Expected: "ASCII text" or "data"
 
 # 6. No failure_info.log from last build run
-ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/$(ls -t output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/ | head -1)/failure_info.log 2>/dev/null
+ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/$(ls -t output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/ | head -1)/failure_info.log 2>/dev/null
 # ✅ Expected: "No such file" (file should NOT exist)
 ```
 
@@ -133,29 +147,31 @@ After successful `fe_be` completion:
 
 ```bash
 # Step 1: Run post_zcui
-grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui
+grdlbuild :emu_build:zebu:<MODEL_TARGET>_post_zcui
+# Example for ghpf: grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui
 
 # Step 2: Verify U0-U3 exist
-ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
+ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
 
 # Step 3: Verify MuDb
-wc -c output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/backend_default/MuDb/equis/info
+wc -c output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/MuDb/equis/info
 
 # Step 4: Fix library symlinks (MANDATORY before testing)
 bash scripts/fix_zse5_libs.sh
 
 # Step 5: Verify no missing dependencies
-ldd output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
+ldd output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
 ```
 
 ## Log File Locations
 
 ```
 # Main grdlbuild log
-output/grdlbuild/logs/emu_build.zebu.pkg_ghpf_model_zse5.log
+output/grdlbuild/logs/emu_build.zebu.<MODEL_TARGET>.log
+# Example for ghpf: output/grdlbuild/logs/emu_build.zebu.pkg_ghpf_model_zse5.log
 
 # Build run log directory
-output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/<TIMESTAMP>/
+output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/<TIMESTAMP>/
 
 # Key files:
 #   fe_be.NB.log       — main Zebu stage-by-stage progress
@@ -163,10 +179,10 @@ output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/<TIMESTAMP>/
 #   zebu_tb.log        — zebu_tb packaging step
 
 # Shadow files (presence = stage completed)
-output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/
+output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/
 
 # Find current run timestamp
-ls -lt output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/ | head -5
+ls -lt output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/ | head -5
 ```
 
 ## Build Session Log

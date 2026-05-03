@@ -56,7 +56,7 @@ tags: [patterns, failures, categories, recurring, classification]
 ## Pattern 8: Tests Fail — "No builds found to validate"
 - **Symptom**: `emurun WARNING: Filtering out zse5/` + `No builds found to validate`
 - **Cause**: `prepare_spark` and `spark_tb` never ran (zebu_tb was manually forced)
-- **General Fix**: Re-run `grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5 -Penv=immediate`
+- **General Fix**: Re-run `grdlbuild :emu_build:zebu:<MODEL_TARGET> -Penv=immediate`
 - **Related Bugs**: BUG-005
 
 ## Pattern 9: MuDb Missing / FpgaPostProc Skipped

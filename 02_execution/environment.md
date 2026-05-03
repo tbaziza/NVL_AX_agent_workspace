@@ -16,7 +16,8 @@ tags: [environment, paths, tools, nfs, zebu, vcs, simics]
 
 ## ZSE5 Model Path
 ```
-ZSE5=output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5
+# Replace <EMU_MODEL> with the model being built (e.g., pkg_ghpf_model)
+ZSE5=output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5
 ```
 
 ## Tool Installations
@@ -76,7 +77,7 @@ export WORKAREA=/nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle110
 df -h /nfs/site/disks/ive_sle_zsc11_tbaziza | tail -1
 
 # Find large dirs
-du -sh output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/zcui.work/* 2>/dev/null | sort -rh | head -15
+du -sh output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/* 2>/dev/null | sort -rh | head -15
 ```
 
 ### Safe-to-Delete (ONLY after corresponding stage passes)

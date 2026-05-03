@@ -10,14 +10,27 @@ tags: [doa, tests, spacedoa, spacex, simregress, trex]
 DOA (Dead-On-Arrival) tests verify that the compiled emulation model can boot and run basic workloads.
 Two tests are run: `spacedoa_mobile` and `spacex_mobile`.
 
+> **Multi-model support:** Replace `<EMU_MODEL>` and `<MODEL_TARGET>` with the model you are testing.
+
+### Supported Models
+
+| Gradle Target (`<MODEL_TARGET>`) | `-emu_model` Flag (`<EMU_MODEL>`) | Reglist | Short Name |
+|----------------------------------|-----------------------------------|---------|------------|
+| `pkg_ghpf_model_zse5` | `pkg_ghpf_model` | `doa_pkg_ghpf_model_zse5.list` | ghpf |
+| `pkg_chp_model_p2e4_fast_zse5` | `pkg_chp_model_p2e4_fast` | `doa_pkg_chp_model_p2e4_fast_zse5.list` | chp_p2e4_fast |
+| `pkg_chp_hubs_full_model_p2e4_zse5` | `pkg_chp_hubs_full_model_p2e4` | `doa_pkg_chp_hubs_full_model_p2e4_zse5.list` | chp_hubs_full_p2e4 |
+| `pkg_chp_model_p2e4_zse5` | `pkg_chp_model_p2e4` | `doa_pkg_chp_model_p2e4_zse5.list` | chp_p2e4 |
+
 ## Test Submission Command
 
 ```bash
 cd /nfs/site/disks/ive_sle_zsc11_tbaziza/models/integrate_bundle1106
-simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tech zse5 \
+simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model <EMU_MODEL> -emu_tech zse5 \
   -no_compress EMUL_QSLOT=/prj/sv/nvl/emu/interactive -trex- \
   -P zsc11_express -Q /IVE/NVL/emu \
-  -l reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list
+  -l reglist/nvlsi7_n2p/emu/doa_<MODEL_TARGET>.list
+# Example for ghpf:
+#   -emu_model pkg_ghpf_model ... -l reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list
 ```
 
 ## Test Details
@@ -27,7 +40,7 @@ simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tec
 - **Cycle limit**: 50ms (but `common_defaults.list` overrides to 11ms)
 - **Pass criteria**: All cores reach `EBX=0xaced` (PASS COMPLETE), zero assertion failures
 - **Duration**: ~4-5 hours on ZSE5 hardware
-- **Key files**: `test_doa.list`, `reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list`
+- **Key files**: `test_doa.list`, `reglist/nvlsi7_n2p/emu/doa_<MODEL_TARGET>.list`
 
 ### spacex_mobile
 - **Purpose**: GPU PCIe workload — PCIe link training + SpaceX GPU MMIO test
@@ -39,8 +52,9 @@ simregress -dut nvlsi7_n2p -save -no_xs -trex -emu_model pkg_ghpf_model -emu_tec
 
 ## Reglist Configuration
 
-### `reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list`
+### `reglist/nvlsi7_n2p/emu/doa_<MODEL_TARGET>.list`
 ```
+# Example for ghpf: reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list
 # Includes:
 .include test_spacex.list
 .include test_doa.list

@@ -1,10 +1,10 @@
 ---
 title: "NVL-AX Agent Workspace — Index &amp; Routing Guide"
-version: "1.0"
+version: "1.1"
 project: NVL-AX
 platform: ZSE5 Zebu Emulation
 dut: nvlsi7_n2p
-model: pkg_ghpf_model
+models: [pkg_ghpf_model, pkg_chp_model_p2e4_fast, pkg_chp_hubs_full_model_p2e4, pkg_chp_model_p2e4]
 last_updated: "2026-04-29"
 tags: [index, routing, entry-point, agent-instructions]
 ---
@@ -17,7 +17,7 @@ tags: [index, routing, entry-point, agent-instructions]
 ## Purpose
 
 This workspace contains all accumulated knowledge for compiling, testing, debugging, and monitoring
-the `pkg_ghpf_model` Zebu ZSE5 emulation model for the `nvlsi7_n2p` DUT. It is designed for:
+Zebu ZSE5 emulation models for the `nvlsi7_n2p` DUT. It is designed for:
 - **AI agents** (Copilot CLI, autonomous integration assistants) — optimized for RAG retrieval
 - **Human engineers** — structured for rapid lookup and troubleshooting
 

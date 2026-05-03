@@ -11,25 +11,25 @@ tags: [debug, workflow, logs, troubleshooting, errors, root-cause]
 ### Build Failure
 ```bash
 # Check if build failed
-cat output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/log/<TIMESTAMP>/failure_info.log 2>/dev/null || echo "no failure"
+cat output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/<TIMESTAMP>/failure_info.log 2>/dev/null || echo "no failure"
 
 # Check top-level verdict
-grep -E "PASSED|FAILED|Exit status" output/grdlbuild/logs/emu_build.zebu.pkg_ghpf_model_zse5.log | tail -10
+grep -E "PASSED|FAILED|Exit status" output/grdlbuild/logs/emu_build.zebu.<MODEL_TARGET>.log | tail -10
 ```
 
 ### Test Failure
 ```bash
-# Check test results
-cat regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/<test>/results.log
-cat regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/<test>/assertion_failures.log
-cat regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/<test>/postmortem.log | head -5
+# Check test results (replace <MODEL_TARGET> with model, e.g. pkg_ghpf_model_zse5)
+cat regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/<test>/results.log
+cat regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/<test>/assertion_failures.log
+cat regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/<test>/postmortem.log | head -5
 ```
 
 ## Step 2: Find the Error
 
 ### Build Errors
 ```bash
-ZSE5="output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5"
+ZSE5="output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5"
 LOGDIR="$ZSE5/log/<TIMESTAMP>"
 
 # Find which Zebu sub-stage failed
@@ -246,7 +246,7 @@ When tracing a stuck LIP (Last Instruction Pointer) or uCode execution issue, us
 
 Runnable bash snippets for phased failure triage. All commands use standard `grep`/`zgrep` (no dependency on `log_scanner`). Run these from a test directory:
 ```
-cd regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/<test>/
+cd regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/<test>/
 ```
 
 ### Method 1: logbook.log Stage Table Parsing (most reliable — 30 seconds max)
@@ -514,7 +514,7 @@ Example:
 For automated scoring, run the phase-detection + scoring script:
 
 ```bash
-cd regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/<test>/
+cd regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/<test>/
 ../../scripts/run_phase_detection_nvlax.sh
 ```
 

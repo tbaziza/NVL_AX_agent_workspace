@@ -17,7 +17,7 @@ tags: [zebu, zse5, emulator, setup, fm, boards]
 
 1. **All 19 shadow files present** (model fully compiled):
    ```bash
-   ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/ | wc -l
+   ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/ | wc -l
    # Must be 19
    ```
 
@@ -29,7 +29,7 @@ tags: [zebu, zse5, emulator, setup, fm, boards]
 
 3. **No missing shared library dependencies**:
    ```bash
-   ldd output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
+   ldd output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
    # Must produce NO output
    ```
 
@@ -53,7 +53,8 @@ tags: [zebu, zse5, emulator, setup, fm, boards]
 - Logbook stays completely frozen during active emulation — this is **NORMAL** (see BUG-030)
 - When a board dies: partial rsync (~150 bytes) appears as the "death signal"
 
-### Cycle Times (pkg_ghpf_model, ZSE5)
+### Cycle Times (ZSE5)
+> Cycle times vary by model. Example below is for `pkg_ghpf_model`.
 - Observed rate: ~2.3ms simulated time per hour of wall clock time
 - `spacedoa_mobile`: cycle limit 50ms → ~5 hours (but common_defaults overrides to 11ms → ~4-5h)
 - `spacex_mobile`: cycle limit 240ms → completes naturally at ~135ms SimTime
@@ -67,7 +68,7 @@ tags: [zebu, zse5, emulator, setup, fm, boards]
 
 ## Key Files in Test Directory
 ```
-regression/nvlsi7_n2p/doa_pkg_ghpf_model_zse5.list.N/
+regression/nvlsi7_n2p/doa_<MODEL_TARGET>.list.N/
 ├── spacedoa_mobile/
 │   ├── logbook.log          # High-level test progress
 │   ├── emurun.log           # Emulation run details, FM job IDs
