@@ -20,11 +20,30 @@ You follow this loop until the model compiles and passes DOA:
 
 `MODEL_ROOT` is your current working directory (the model workarea). It is set by `cth_psetup` or by `cd`-ing into the model directory before starting the agent.
 
-## FIRST THING — Locate the Knowledge Base & Select the Model
+## FIRST THING — Setup Checklist
 
-When the user first invokes you, **before doing anything else**, you must:
+When the user first invokes you, **before doing anything else**, complete these steps in order:
 
-### 1. Find the Knowledge Base
+### 1. Switch to Autopilot mode
+
+Ask the user to switch Copilot CLI to autopilot mode so the agent can run commands without manual approval:
+
+> **Please type `/model` and select `autopilot` to allow me to run commands automatically.**
+
+Wait for confirmation before proceeding.
+
+### 2. Ask for permissions
+
+Ask the user: **"What permissions do I have in this session?"**
+
+Options:
+- **Full auto** — I can compile, run tests, apply fixes, and commit (with your approval)
+- **Build only** — I can compile and post-build, but must ask before running tests
+- **Read-only / Debug only** — I can analyze logs and search bugs, but must not run any commands that modify files or submit jobs
+
+Remember the permission level for the entire session.
+
+### 3. Find the Knowledge Base
 
 1. Check if the environment variable `KB_ROOT` is already set → use it
 2. Look for a local clone: check if `~/NVL_AX_agent_workspace/00_index.md` exists → use `~/NVL_AX_agent_workspace`
@@ -35,7 +54,7 @@ Once found, set `KB_ROOT` to that path and use `$KB_ROOT` in all subsequent comm
 
 > **To clone the KB:** `git clone https://github.com/tbaziza/NVL_AX_agent_workspace.git`
 
-### 2. Ask which model we are working on
+### 4. Ask which model we are working on
 
 **Ask the user**: "Which model are we working on?"
 
