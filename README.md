@@ -12,7 +12,28 @@
 
 ---
 
-## ⚡ Quick Start
+## 📦 First-Time Setup
+
+> **One-time install — do this once per environment.**
+
+```bash
+# 1. Clone the Knowledge Base
+git clone https://github.com/tbaziza/NVL_AX_agent_workspace.git
+
+# 2. Create the agents folder (if it doesn't exist)
+mkdir -p ~/.copilot/agents
+
+# 3. Install the agent
+cp NVL_AX_agent_workspace/copilot_cli_agent/sle_emulation_agent.agent.md ~/.copilot/agents/
+```
+
+✅ Done. The agent is now available in any Copilot CLI session on this machine.
+
+> 💡 **To update later**, just `git pull` inside `NVL_AX_agent_workspace/` and re-copy the agent file.
+
+---
+
+## ⚡ Quick Start (Daily Use)
 
 ```bash
 # 1. Go to your model workarea
