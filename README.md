@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 SLE Emulation Agent
+# 🤖  Emulation Agent
 
 **An AI-powered agent that compiles, tests, debugs, and fixes ZeBu ZSE5 emulation models — end to end.**
 
