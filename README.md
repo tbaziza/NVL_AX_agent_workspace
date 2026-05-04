@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🤖 NVL-AX Compilation Agent
+# 🤖 SLE Emulation Agent
 
-**An AI-powered agent that compiles, tests, debugs, and fixes NVL-AX ZeBu ZSE5 emulation models — end to end.**
+**An AI-powered agent that compiles, tests, debugs, and fixes ZeBu ZSE5 emulation models — end to end.**
 
 [![Agent](https://img.shields.io/badge/Copilot_CLI-Agent-blue?style=for-the-badge&logo=github)](https://github.com/tbaziza/emulation_agent)
 [![Bugs](https://img.shields.io/badge/Known_Bugs-57-orange?style=for-the-badge)](05_knowledge_and_debugging/known_bugs_and_fixes/)
@@ -267,6 +267,6 @@ Inside Copilot CLI, run these commands:
 
 <div align="center">
 
-**Created by Tomer Baziza** · NVL-AX Silicon Validation · Intel
+**Created by Tomer Baziza** · SLE Emulation · Intel
 
 </div>
