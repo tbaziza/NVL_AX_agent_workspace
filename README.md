@@ -83,7 +83,7 @@ That's it. You're ready to go.
 ### 🔧 Post-Build
 | Prompt | What it does |
 |--------|-------------|
-| `run post-build steps` | Run post_zcui + fix_zse5_libs.sh |
+| `run post-build (recovery)` | Run post_zcui — only when zcui/zebu_tb failed, with user approval |
 
 ### 🧪 Testing
 | Prompt | What it does |
@@ -125,7 +125,7 @@ flowchart TD
     COMPILE["🔨 STEP 1 — COMPILE\n━━━━━━━━━━━━━━━━━━━━━\ngrdlbuild\n14 build stages · ~30 hrs\n7 pass checks"]
     COMPILE -->|"✅ pass"| POSTBUILD
 
-    POSTBUILD["🔧 STEP 2 — POST-BUILD\n━━━━━━━━━━━━━━━━━━━━━\npost_zcui\nlibrary symlink repair"]
+    POSTBUILD["🔧 STEP 2 — POST-BUILD (on demand)\n━━━━━━━━━━━━━━━━━━━━━\npost_zcui (only if zcui/zebu_tb failed,\nuser approval required)"]
     POSTBUILD --> TEST
 
     TEST["🧪 STEP 3 — DOA TEST\n━━━━━━━━━━━━━━━━━━━━━\nsimregress\nspacedoa / spacex · ~4-5 hrs\n5 pass checks"]

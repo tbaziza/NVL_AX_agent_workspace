@@ -25,8 +25,7 @@ tags: [commands, shell, reference, grdlbuild, simregress, nbstatus]
 |---------|-------------|-------------|
 | `grdlbuild :emu_build:zebu:<MODEL_TARGET> -Penv=immediate` | Full build from scratch | First build or major changes |
 | `grdlbuild :emu_build:zebu:<MODEL_TARGET> -id` | Resume from Zebu stage | After mid-build failure |
-| `grdlbuild :emu_build:zebu:<MODEL_TARGET>_post_zcui` | Post-build steps only | After fe_be completes |
-| `bash scripts/fix_zse5_libs.sh` | Fix library symlinks | After every fe_be build, before testing |
+| `grdlbuild :emu_build:zebu:<MODEL_TARGET>_post_zcui` | Post-build (recovery) — DO NOT auto-run | ONLY if zcui/zebu_tb failed AND user approves |
 
 ## Test Commands
 

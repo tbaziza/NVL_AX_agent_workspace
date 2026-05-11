@@ -10,7 +10,7 @@
 
 ```
 Step 1: COMPILE ──→ grdlbuild → check 6 pass criteria
-Step 2: POST-BUILD ──→ post_zcui + fix_zse5_libs.sh
+Step 2: POST-BUILD ──→ post_zcui (on demand only — if zcui/zebu_tb failed, with user approval)
 Step 3: DOA TEST ──→ simregress → check 5 pass criteria
 Step 4: IF FAIL ──→ detect phase → collect symptoms → match known bugs → apply fix
 Step 5: RE-RUN ──→ go back to Step 1 or Step 3
@@ -20,7 +20,7 @@ Step 5: RE-RUN ──→ go back to Step 1 or Step 3
 1. Run grdlbuild command (see nvlax-build instructions)
 2. Monitor until completion (~50 hrs)
 3. Verify 7 pass checks
-4. Run post-build steps (post_zcui + fix_zse5_libs.sh)
+4. Run post-build (post_zcui) — only if zcui/zebu_tb failed, after asking the user
 5. If pass → offer to run DOA tests
 
 ### When asked "run tests" or "run DOA"

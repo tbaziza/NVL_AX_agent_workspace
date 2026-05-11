@@ -9,7 +9,6 @@ tags: [quality, checklist, validation, handoff, doa]
 ## Build Verification
 
 - [ ] All 19 shadow files present: `ls .shadow/ | wc -l` = 19
-- [ ] `fix_zse5_libs.sh` ran successfully (100+ symlinks, 352 RPATH patches)
 - [ ] `ldd zse_engine.so | grep "not found"` returns empty
 - [ ] `readmem.dump` is a regular file (not symlink) with absolute paths
 - [ ] U0-U3 directories exist in `backend_default/`

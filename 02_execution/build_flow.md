@@ -150,26 +150,23 @@ grep -qE "^\s*VALID\s*[:=]\s*YES\b" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/
   && echo "✅ COMPILATION PASSED" || echo "❌ COMPILATION INCOMPLETE"
 ```
 
-## Post-Build Steps (CRITICAL)
+## Post-Build Steps (on demand only — DO NOT auto-run)
 
-After successful `fe_be` completion:
+**Do NOT run `post_zcui` automatically after a successful compilation.**
+
+`post_zcui` is a recovery step. The agent should run it ONLY when the `zcui` / `zebu_tb` stage failed during the build, and ONLY after explicitly asking the user for permission:
+
+> "The `zcui` / `zebu_tb` stage appears to have failed. May I run `post_zcui` to retry that stage only?"
+
+If — and only if — the user approves:
 
 ```bash
-# Step 1: Run post_zcui
 grdlbuild :emu_build:zebu:<MODEL_TARGET>_post_zcui
 # Example for ghpf: grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui
 
-# Step 2: Verify U0-U3 exist
+# Then re-verify the U0-U3 / MuDb checks from the section above
 ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
-
-# Step 3: Verify MuDb
 wc -c output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/MuDb/equis/info
-
-# Step 4: Fix library symlinks (MANDATORY before testing)
-bash scripts/fix_zse5_libs.sh
-
-# Step 5: Verify no missing dependencies
-ldd output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
 ```
 
 ## Log File Locations

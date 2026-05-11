@@ -85,7 +85,7 @@ You should see 4 loaded files: `nvlax-agent`, `nvlax-build`, `nvlax-testing`, `n
 
 ```
 Step 1: COMPILE    → runs grdlbuild → checks 6 pass criteria
-Step 2: POST-BUILD → runs post_zcui + fix_zse5_libs.sh
+Step 2: POST-BUILD → runs post_zcui (on demand only — when zcui/zebu_tb failed, with user approval)
 Step 3: DOA TEST   → runs simregress → checks 5 pass criteria
 Step 4: IF FAIL    → detects phase → searches 57 known bugs → suggests fix
 ```

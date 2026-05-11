@@ -59,11 +59,18 @@ grep -qE "^\s*VALID\s*[:=]\s*YES\b" output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_mod
   && echo "COMPILATION PASSED" || echo "COMPILATION INCOMPLETE"
 ```
 
-## Step 2: Post-Build (MANDATORY after compilation passes)
+## Step 2: Post-Build (on demand only — DO NOT auto-run)
+
+**Do NOT run `post_zcui` automatically after a successful compilation.**
+
+Only run it as a recovery step when the `zcui` / `zebu_tb` stage failed during the build, and ONLY after asking the user for permission:
+
+> "The `zcui` / `zebu_tb` stage appears to have failed. May I run `post_zcui` to retry that stage only?"
+
+If approved:
 
 ```bash
 grdlbuild :emu_build:zebu:pkg_ghpf_model_zse5_post_zcui  # post_zcui
-bash scripts/fix_zse5_libs.sh                              # fix library symlinks — NEVER SKIP
 ```
 
 ## If Compilation Fails → Go to debug instructions
