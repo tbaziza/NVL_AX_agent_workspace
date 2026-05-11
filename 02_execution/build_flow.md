@@ -107,38 +107,47 @@ grdlbuild :emu_build:zebu:<MODEL_TARGET> -id
 
 ## How to Know Compilation Passed Successfully
 
-Run these checks **in order**. ALL must pass to confirm a successful build:
+Run these checks **in order**. ALL must pass to confirm a successful build.
+
+> **Note:** the technology subdir under `<EMU_MODEL>/` may be `zse5` **or** `zse4` depending on the build platform. Adjust the paths below accordingly.
 
 ```bash
-# 1. Shadow files — ALL 19 must exist (each represents a completed stage)
+# 1. .build_info.yml reports VALID = YES  ← GATE: if this fails, do NOT run checks 2–7
+grep -E "^\s*VALID\s*[:=]" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.build_info.yml
+# ✅ Expected: a line where VALID is set to YES (e.g. "VALID: YES")
+# ❌ If VALID != YES or file missing: build is NOT valid — STOP, do not run remaining checks.
+
+# 2. Shadow files — ALL 19 must exist (each represents a completed stage)
 ls .shadow/ | wc -l
 # ✅ Expected: 19
 # ❌ If < 19: build did not complete. Identify the missing stage.
 
-# 2. U0-U3 backend directories (FPGA partitions were placed & routed)
+# 3. U0-U3 backend directories (FPGA partitions were placed & routed)
 ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/ | grep "^U[0-9]"
 # ✅ Expected: U0, U1, U2, U3
 
-# 3. MuDb info file non-empty (model database assembled)
+# 4. MuDb info file non-empty (model database assembled)
 wc -c output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/zcui.work/backend_default/MuDb/equis/info
 # ✅ Expected: non-zero byte count
 
-# 4. No missing shared library dependencies
+# 5. No missing shared library dependencies
 ldd output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep "not found"
 # ✅ Expected: EMPTY output (no missing libs)
 
-# 5. readmem.dump is a regular file (not a symlink to itself)
+# 6. readmem.dump is a regular file (not a symlink to itself)
 file output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/readmem.dump
 # ✅ Expected: "ASCII text" or "data"
 
-# 6. No failure_info.log from last build run
+# 7. No failure_info.log from last build run
 ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/$(ls -t output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/log/ | head -1)/failure_info.log 2>/dev/null
 # ✅ Expected: "No such file" (file should NOT exist)
 ```
 
-**Quick one-liner verdict:**
+**Quick one-liner verdict (gate on VALID first):**
 ```bash
-[ $(ls .shadow/ | wc -l) -eq 19 ] && echo "✅ COMPILATION PASSED" || echo "❌ COMPILATION INCOMPLETE"
+grep -qE "^\s*VALID\s*[:=]\s*YES\b" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.build_info.yml \
+  && [ $(ls .shadow/ | wc -l) -eq 19 ] \
+  && echo "✅ COMPILATION PASSED" || echo "❌ COMPILATION INCOMPLETE"
 ```
 
 ## Post-Build Steps (CRITICAL)

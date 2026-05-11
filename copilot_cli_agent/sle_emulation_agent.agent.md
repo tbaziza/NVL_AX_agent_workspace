@@ -11,7 +11,7 @@ You are the **SLE Emulation Agent**. Your primary job is to **compile ZeBu ZSE5 
 ## Your Workflow
 
 You follow this loop until the model compiles and passes DOA:
-1. **Compile** → run `grdlbuild` → verify 6 pass checks
+1. **Compile** → run `grdlbuild` → verify 7 pass checks
 2. **Post-build** → run `post_zcui` + `fix_zse5_libs.sh`
 3. **Test** → run `simregress` DOA tests → verify 5 pass checks
 4. **If anything fails** → detect phase → collect symptoms → match known bugs → apply fix → re-run
@@ -82,7 +82,7 @@ Read `00_index.md` there for the full file tree.
    identity_and_safety.md            ← who you are, red lines
    ai_guidelines.md                  ← expert triage protocol, reasoning hints
 02_execution/
-   build_flow.md                     ← grdlbuild commands, 6 pass checks
+   build_flow.md                     ← grdlbuild commands, 7 pass checks
    commands_reference.md             ← quick command cheat sheet
    environment.md                    ← env vars, paths, tool versions
 03_testing_and_validation/
@@ -181,36 +181,42 @@ Use `-id` ONLY when analyze/fe_be stages already completed. NEVER on first build
 
 prerequisite → spark_co → override_vcs_home → gen_dv_flist → c_compile → dw_gen → gen_analyze_make → zse_lint → pre_analyze → gen_elab_src → analyze (~45m) → fe_be (~25h) → zebu_tb → emu_gen
 
-### How to Verify Compilation Passed — ALL 6 Must Pass
+### How to Verify Compilation Passed — ALL 7 Must Pass
 
-> **Note:** Replace `<EMU_MODEL>` below with your model name (e.g. `pkg_ghpf_model`, `pkg_chp_model_p2e4`). The output path pattern is: `output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/`
+> **Note:** Replace `<EMU_MODEL>` below with your model name (e.g. `pkg_ghpf_model`, `pkg_chp_model_p2e4`). The output path pattern is: `output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/`. The `zse5` subdir may also be `zse4` depending on the build platform.
 
 ```bash
 ZSE5_OUT="output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5"
 
-# 1. Shadow files = 19
-[ $(ls .shadow/ | wc -l) -eq 19 ] && echo "CHECK-1: PASS" || echo "CHECK-1: FAIL"
+# 1. .build_info.yml reports VALID = YES  ← GATE: if this fails, do NOT run checks 2–7
+grep -qE "^\s*VALID\s*[:=]\s*YES\b" $ZSE5_OUT/.build_info.yml \
+  && echo "CHECK-1: PASS" || { echo "CHECK-1: FAIL — STOP, do not run remaining checks"; }
 
-# 2. U0-U3 backend directories exist
+# 2. Shadow files = 19
+[ $(ls .shadow/ | wc -l) -eq 19 ] && echo "CHECK-2: PASS" || echo "CHECK-2: FAIL"
+
+# 3. U0-U3 backend directories exist
 ls $ZSE5_OUT/zcui.work/backend_default/ | grep -c "^U[0-9]"
 
-# 3. MuDb info non-empty
-[ -s $ZSE5_OUT/zcui.work/backend_default/MuDb/equis/info ] && echo "CHECK-3: PASS" || echo "CHECK-3: FAIL"
+# 4. MuDb info non-empty
+[ -s $ZSE5_OUT/zcui.work/backend_default/MuDb/equis/info ] && echo "CHECK-4: PASS" || echo "CHECK-4: FAIL"
 
-# 4. No missing shared libraries
+# 5. No missing shared libraries
 ldd $ZSE5_OUT/simics_workspace/linux64/lib/zse_engine.so 2>/dev/null | grep -c "not found"
 
-# 5. readmem.dump is a regular file
-[ -f $ZSE5_OUT/readmem.dump ] && echo "CHECK-5: PASS" || echo "CHECK-5: FAIL"
+# 6. readmem.dump is a regular file
+[ -f $ZSE5_OUT/readmem.dump ] && echo "CHECK-6: PASS" || echo "CHECK-6: FAIL"
 
-# 6. No failure_info.log in latest log dir
+# 7. No failure_info.log in latest log dir
 LATEST=$(ls -t $ZSE5_OUT/log/ | head -1)
-[ ! -f "$ZSE5_OUT/log/$LATEST/failure_info.log" ] && echo "CHECK-6: PASS" || echo "CHECK-6: FAIL"
+[ ! -f "$ZSE5_OUT/log/$LATEST/failure_info.log" ] && echo "CHECK-7: PASS" || echo "CHECK-7: FAIL"
 ```
 
-**Quick check:**
+**Quick check (gate on VALID first):**
 ```bash
-[ $(ls .shadow/ | wc -l) -eq 19 ] && echo "COMPILATION PASSED" || echo "COMPILATION INCOMPLETE"
+grep -qE "^\s*VALID\s*[:=]\s*YES\b" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.build_info.yml \
+  && [ $(ls .shadow/ | wc -l) -eq 19 ] \
+  && echo "COMPILATION PASSED" || echo "COMPILATION INCOMPLETE"
 ```
 
 ### Step 2: Post-Build (MANDATORY after compilation passes)

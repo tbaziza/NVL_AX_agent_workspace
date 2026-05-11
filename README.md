@@ -78,7 +78,7 @@ That's it. You're ready to go.
 |--------|-------------|
 | `compile the model` | Start a fresh grdlbuild |
 | `resume the build` | Continue a build with `-id` |
-| `check if compilation passed` | Run the 6 pass checks |
+| `check if compilation passed` | Run the 7 pass checks |
 
 ### 🔧 Post-Build
 | Prompt | What it does |
@@ -122,7 +122,7 @@ That's it. You're ready to go.
 flowchart TD
     START([🚀 Start]) --> COMPILE
 
-    COMPILE["🔨 STEP 1 — COMPILE\n━━━━━━━━━━━━━━━━━━━━━\ngrdlbuild\n14 build stages · ~30 hrs\n6 pass checks"]
+    COMPILE["🔨 STEP 1 — COMPILE\n━━━━━━━━━━━━━━━━━━━━━\ngrdlbuild\n14 build stages · ~30 hrs\n7 pass checks"]
     COMPILE -->|"✅ pass"| POSTBUILD
 
     POSTBUILD["🔧 STEP 2 — POST-BUILD\n━━━━━━━━━━━━━━━━━━━━━\npost_zcui\nlibrary symlink repair"]

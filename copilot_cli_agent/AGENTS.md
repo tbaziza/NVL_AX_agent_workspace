@@ -19,7 +19,7 @@ Step 5: RE-RUN ──→ go back to Step 1 or Step 3
 ### When asked "compile" or "build"
 1. Run grdlbuild command (see nvlax-build instructions)
 2. Monitor until completion (~50 hrs)
-3. Verify 6 pass checks
+3. Verify 7 pass checks
 4. Run post-build steps (post_zcui + fix_zse5_libs.sh)
 5. If pass → offer to run DOA tests
 
