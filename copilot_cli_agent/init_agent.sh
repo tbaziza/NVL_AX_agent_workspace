@@ -208,84 +208,45 @@ fi
 echo ""
 
 #───────────────────────────────────────────────────────────────────────────────
-# Step 7: Set up skills directory and install skills
+# Step 7: Install skills into ~/.copilot/skills/
 #───────────────────────────────────────────────────────────────────────────────
-echo -e "${BOLD}Step 7: Set up skills directory and install skill files${RESET}"
+echo -e "${BOLD}Step 7: Install skill directories${RESET}"
 
-SKILLS_SRC="$COPILOT_HOME/skills"
-DEST_SKILLS="$WORKING_DISK/homedir/.copilot/skills"
+SKILLS_DEST="$COPILOT_HOME/skills"
 SKILLS_DIR="$KB_ROOT/06_skills"
 SKILLS_INSTALLED=0
+SKILLS_SKIPPED=0
 
-# 7a. Create skills directory on working disk (same pattern as agents)
-mkdir -p "$DEST_SKILLS"
-ok "Created directory: $DEST_SKILLS"
+# Ensure the skills directory exists
+mkdir -p "$SKILLS_DEST"
 
-# 7b. Copy existing skills if the source exists and is a real directory
-if [ -d "$SKILLS_SRC" ] && [ ! -L "$SKILLS_SRC" ]; then
-    cp -a "$SKILLS_SRC"/. "$DEST_SKILLS"/
-    ok "Copied existing skills from $SKILLS_SRC → $DEST_SKILLS"
-elif [ -L "$SKILLS_SRC" ]; then
-    SKILL_LINK_TARGET="$(readlink -f "$SKILLS_SRC")"
-    if [ -d "$SKILL_LINK_TARGET" ]; then
-        cp -a "$SKILL_LINK_TARGET"/. "$DEST_SKILLS"/
-        ok "Copied existing skills from symlink target $SKILL_LINK_TARGET → $DEST_SKILLS"
-    else
-        warn "Symlink target $SKILL_LINK_TARGET is not valid. Starting fresh."
-    fi
-elif [ ! -e "$SKILLS_SRC" ]; then
-    info "$SKILLS_SRC does not exist yet. Will create fresh."
-fi
-
-# 7c. Backup and symlink (same pattern as agents Step 3/4)
-SKILLS_BACKUP="$COPILOT_HOME/skills_BACKUP"
-if [ -L "$SKILLS_SRC" ]; then
-    rm "$SKILLS_SRC"
-    ok "Removed existing symlink at $SKILLS_SRC"
-elif [ -d "$SKILLS_SRC" ]; then
-    if [ -d "$SKILLS_BACKUP" ]; then
-        warn "Skills backup already exists at $SKILLS_BACKUP — skipping mv"
-        rm -rf "$SKILLS_SRC"
-    else
-        mv "$SKILLS_SRC" "$SKILLS_BACKUP"
-        ok "Backed up: $SKILLS_SRC → $SKILLS_BACKUP"
-    fi
-fi
-
-ln -s "$DEST_SKILLS" "$SKILLS_SRC"
-ok "Symlink created: $SKILLS_SRC → $DEST_SKILLS"
-
-if [ -L "$SKILLS_SRC" ] && [ -d "$SKILLS_SRC" ]; then
-    ok "Skills symlink verified — directory is accessible"
-else
-    die "Skills symlink verification failed!"
-fi
-
-# 7d. Install skill files from KB
+# Each skill is a directory containing SKILL.md (+ optional scripts/, references/, assets/)
 if [ -d "$SKILLS_DIR" ]; then
     shopt -s nullglob
-    SKILL_FILES=("$SKILLS_DIR"/*.md)
+    SKILL_DIRS=("$SKILLS_DIR"/*/)
     shopt -u nullglob
 
-    if [ ${#SKILL_FILES[@]} -eq 0 ]; then
-        warn "No .md files found in $SKILLS_DIR — skipping skill installation."
+    if [ ${#SKILL_DIRS[@]} -eq 0 ]; then
+        warn "No skill directories found in $SKILLS_DIR — skipping."
     else
-        SKILLS_SKIPPED=0
-        for src_file in "${SKILL_FILES[@]}"; do
-            base="$(basename "$src_file")"
-            # Rename foo.md → foo.skill.md for Copilot CLI
-            dest_name="${base%.md}.skill.md"
-            dest_path="$DEST_SKILLS/$dest_name"
-            # Skip if already installed and identical
-            if [ -f "$dest_path" ] && cmp -s "$src_file" "$dest_path"; then
+        for src_dir in "${SKILL_DIRS[@]}"; do
+            skill_name="$(basename "$src_dir")"
+            dest_dir="$SKILLS_DEST/$skill_name"
+
+            # Skip if already installed and SKILL.md is identical
+            if [ -f "$dest_dir/SKILL.md" ] && cmp -s "$src_dir/SKILL.md" "$dest_dir/SKILL.md"; then
                 SKILLS_SKIPPED=$((SKILLS_SKIPPED + 1))
                 continue
             fi
-            cp "$src_file" "$dest_path"
+
+            # Copy the entire skill directory
+            rm -rf "$dest_dir"
+            cp -a "$src_dir" "$dest_dir"
             SKILLS_INSTALLED=$((SKILLS_INSTALLED + 1))
         done
+
         if [ $SKILLS_INSTALLED -gt 0 ]; then
-            ok "Installed $SKILLS_INSTALLED skill(s) from $SKILLS_DIR → $DEST_SKILLS"
+            ok "Installed $SKILLS_INSTALLED skill(s) into $SKILLS_DEST"
         fi
         if [ $SKILLS_SKIPPED -gt 0 ]; then
             ok "Skipped $SKILLS_SKIPPED skill(s) — already installed and up to date."
@@ -295,7 +256,7 @@ if [ -d "$SKILLS_DIR" ]; then
         fi
     fi
 else
-    warn "Skills directory not found: $SKILLS_DIR — skipping skill installation."
+    warn "Skills directory not found: $SKILLS_DIR — skipping."
 fi
 
 echo ""
@@ -308,9 +269,8 @@ echo -e "${BOLD}║   ✅  Setup Complete!                                ║${R
 echo -e "${BOLD}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  ${CYAN}Agents directory:${RESET}  $DEST_AGENTS"
-echo -e "  ${CYAN}Skills directory:${RESET}  $DEST_SKILLS"
-echo -e "  ${CYAN}Agent symlink:${RESET}    $AGENTS_SRC → $DEST_AGENTS"
-echo -e "  ${CYAN}Skills symlink:${RESET}   $SKILLS_SRC → $DEST_SKILLS"
+echo -e "  ${CYAN}Skills directory:${RESET}  $SKILLS_DEST"
+echo -e "  ${CYAN}Symlink:${RESET}           $AGENTS_SRC → $DEST_AGENTS"
 echo -e "  ${CYAN}Backup:${RESET}            $BACKUP"
 echo -e "  ${CYAN}KB_ROOT:${RESET}           $KB_ROOT"
 echo -e "  ${CYAN}Agent installed:${RESET}   $INSTALLED_AGENT"
