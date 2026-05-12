@@ -177,27 +177,33 @@ if [ ! -f "$AGENT_SRC" ]; then
     die "Agent file not found: $AGENT_SRC"
 fi
 
-# Copy agent file to the agents directory
-cp "$AGENT_SRC" "$DEST_AGENTS/$AGENT_FILE"
-ok "Copied agent: $AGENT_SRC → $DEST_AGENTS/$AGENT_FILE"
-
-# Update KB_ROOT in the agent file — replace the "Find the Knowledge Base" section
-# with a hardcoded path so the agent doesn't need to search at runtime
 INSTALLED_AGENT="$DEST_AGENTS/$AGENT_FILE"
 
-# Insert a hardcoded KB_ROOT line right after "### 3. Find the Knowledge Base"
-sed -i "/### 3\. Find the Knowledge Base/,/> \*\*To clone the KB:\*\*/{
-    /### 3\. Find the Knowledge Base/!{
-        /> \*\*To clone the KB:\*\*/!d
-    }
-}" "$INSTALLED_AGENT"
+# Check if agent is already installed with the correct KB_ROOT
+if [ -f "$INSTALLED_AGENT" ] && grep -q "KB_ROOT = \`$KB_ROOT\`" "$INSTALLED_AGENT"; then
+    ok "Agent already installed and KB_ROOT is up to date — skipping."
+else
+    # Copy agent file to the agents directory
+    cp "$AGENT_SRC" "$DEST_AGENTS/$AGENT_FILE"
+    ok "Copied agent: $AGENT_SRC → $DEST_AGENTS/$AGENT_FILE"
 
-sed -i "s|### 3\. Find the Knowledge Base|### 3. Find the Knowledge Base\n\n**KB_ROOT is pre-configured by init_agent.sh.**\n\nSet \`KB_ROOT=$KB_ROOT\` — no need to search.\n|" "$INSTALLED_AGENT"
+    # Update KB_ROOT in the agent file — replace the "Find the Knowledge Base" section
+    # with a hardcoded path so the agent doesn't need to search at runtime
 
-# Also replace the generic $KB_ROOT clone instruction
-sed -i "s|> \*\*To clone the KB:\*\*.*|> **KB_ROOT = \`$KB_ROOT\`** (configured by init_agent.sh)|" "$INSTALLED_AGENT"
+    # Insert a hardcoded KB_ROOT line right after "### 3. Find the Knowledge Base"
+    sed -i "/### 3\. Find the Knowledge Base/,/> \*\*To clone the KB:\*\*/{
+        /### 3\. Find the Knowledge Base/!{
+            /> \*\*To clone the KB:\*\*/!d
+        }
+    }" "$INSTALLED_AGENT"
 
-ok "Updated KB_ROOT in agent file → $KB_ROOT"
+    sed -i "s|### 3\. Find the Knowledge Base|### 3. Find the Knowledge Base\n\n**KB_ROOT is pre-configured by init_agent.sh.**\n\nSet \`KB_ROOT=$KB_ROOT\` — no need to search.\n|" "$INSTALLED_AGENT"
+
+    # Also replace the generic $KB_ROOT clone instruction
+    sed -i "s|> \*\*To clone the KB:\*\*.*|> **KB_ROOT = \`$KB_ROOT\`** (configured by init_agent.sh)|" "$INSTALLED_AGENT"
+
+    ok "Updated KB_ROOT in agent file → $KB_ROOT"
+fi
 
 echo ""
 
