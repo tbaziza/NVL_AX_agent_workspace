@@ -74,7 +74,9 @@ if [ -d "$AGENTS_SRC" ] && [ ! -L "$AGENTS_SRC" ]; then
 elif [ -L "$AGENTS_SRC" ]; then
     # If it's already a symlink, copy from the symlink target
     LINK_TARGET="$(readlink -f "$AGENTS_SRC")"
-    if [ -d "$LINK_TARGET" ]; then
+    if [ "$LINK_TARGET" = "$(readlink -f "$DEST_AGENTS")" ]; then
+        ok "Symlink already points to $DEST_AGENTS — data already in place, skipping copy."
+    elif [ -d "$LINK_TARGET" ]; then
         cp -a "$LINK_TARGET"/. "$DEST_AGENTS"/
         ok "Copied existing agents from symlink target $LINK_TARGET → $DEST_AGENTS"
     else
@@ -117,8 +119,12 @@ echo ""
 #───────────────────────────────────────────────────────────────────────────────
 echo -e "${BOLD}Step 4: Create symlink${RESET}"
 
-ln -s "$DEST_AGENTS" "$AGENTS_SRC"
-ok "Symlink created: $AGENTS_SRC → $DEST_AGENTS"
+if [ -L "$AGENTS_SRC" ] && [ "$(readlink -f "$AGENTS_SRC")" = "$(readlink -f "$DEST_AGENTS")" ]; then
+    ok "Symlink already correct: $AGENTS_SRC → $DEST_AGENTS"
+else
+    ln -s "$DEST_AGENTS" "$AGENTS_SRC"
+    ok "Symlink created: $AGENTS_SRC → $DEST_AGENTS"
+fi
 
 # Verify
 if [ -L "$AGENTS_SRC" ] && [ -d "$AGENTS_SRC" ]; then
@@ -223,7 +229,9 @@ if [ -d "$SKILLS_SRC" ] && [ ! -L "$SKILLS_SRC" ]; then
     ok "Copied existing skills from $SKILLS_SRC → $DEST_SKILLS"
 elif [ -L "$SKILLS_SRC" ]; then
     SKILL_LINK_TARGET="$(readlink -f "$SKILLS_SRC")"
-    if [ -d "$SKILL_LINK_TARGET" ]; then
+    if [ "$SKILL_LINK_TARGET" = "$(readlink -f "$DEST_SKILLS")" ]; then
+        ok "Symlink already points to $DEST_SKILLS — data already in place, skipping copy."
+    elif [ -d "$SKILL_LINK_TARGET" ]; then
         cp -a "$SKILL_LINK_TARGET"/. "$DEST_SKILLS"/
         ok "Copied existing skills from symlink target $SKILL_LINK_TARGET → $DEST_SKILLS"
     else
@@ -257,8 +265,12 @@ elif [ ! -e "$SKILLS_SRC" ]; then
     info "No existing skills directory to back up."
 fi
 
-ln -s "$DEST_SKILLS" "$SKILLS_SRC"
-ok "Symlink created: $SKILLS_SRC → $DEST_SKILLS"
+if [ -L "$SKILLS_SRC" ] && [ "$(readlink -f "$SKILLS_SRC")" = "$(readlink -f "$DEST_SKILLS")" ]; then
+    ok "Skills symlink already correct: $SKILLS_SRC → $DEST_SKILLS"
+else
+    ln -s "$DEST_SKILLS" "$SKILLS_SRC"
+    ok "Symlink created: $SKILLS_SRC → $DEST_SKILLS"
+fi
 
 if [ -L "$SKILLS_SRC" ] && [ -d "$SKILLS_SRC" ]; then
     ok "Skills symlink verified — directory is accessible"
