@@ -202,6 +202,37 @@ ok "Updated KB_ROOT in agent file → $KB_ROOT"
 echo ""
 
 #───────────────────────────────────────────────────────────────────────────────
+# Step 7: Install skills
+#───────────────────────────────────────────────────────────────────────────────
+echo -e "${BOLD}Step 7: Install skill files${RESET}"
+
+SKILLS_DIR="$KB_ROOT/06_skills"
+SKILLS_INSTALLED=0
+
+if [ -d "$SKILLS_DIR" ]; then
+    shopt -s nullglob
+    SKILL_FILES=("$SKILLS_DIR"/*.md)
+    shopt -u nullglob
+
+    if [ ${#SKILL_FILES[@]} -eq 0 ]; then
+        warn "No .md files found in $SKILLS_DIR — skipping skill installation."
+    else
+        for src_file in "${SKILL_FILES[@]}"; do
+            base="$(basename "$src_file")"
+            # Rename foo.md → foo.skill.md
+            dest_name="${base%.md}.skill.md"
+            cp "$src_file" "$DEST_AGENTS/$dest_name"
+            SKILLS_INSTALLED=$((SKILLS_INSTALLED + 1))
+        done
+        ok "Installed $SKILLS_INSTALLED skill(s) from $SKILLS_DIR → $DEST_AGENTS"
+    fi
+else
+    warn "Skills directory not found: $SKILLS_DIR — skipping skill installation."
+fi
+
+echo ""
+
+#───────────────────────────────────────────────────────────────────────────────
 # Summary
 #───────────────────────────────────────────────────────────────────────────────
 echo -e "${BOLD}╔══════════════════════════════════════════════════════╗${RESET}"
@@ -213,6 +244,7 @@ echo -e "  ${CYAN}Symlink:${RESET}           $AGENTS_SRC → $DEST_AGENTS"
 echo -e "  ${CYAN}Backup:${RESET}            $BACKUP"
 echo -e "  ${CYAN}KB_ROOT:${RESET}           $KB_ROOT"
 echo -e "  ${CYAN}Agent installed:${RESET}   $INSTALLED_AGENT"
+echo -e "  ${CYAN}Skills installed:${RESET}  $SKILLS_INSTALLED"
 echo ""
 echo -e "  ${GREEN}The sle_emulation_agent is now available in Copilot CLI.${RESET}"
 echo -e "  To verify, run: ${BOLD}ls -la ~/.copilot/agents/$AGENT_FILE${RESET}"

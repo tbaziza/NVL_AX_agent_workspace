@@ -39,6 +39,9 @@ Zebu ZSE5 emulation models for the `nvlsi7_n2p` DUT. It is designed for:
 | Search known bugs | `05_knowledge_and_debugging/known_bugs_and_fixes/` (34 files) |
 | Recognize a failure pattern | `05_knowledge_and_debugging/common_patterns.md` |
 | Document a new bug | `05_knowledge_and_debugging/bug_template.md` + `documentation_rules.md` |
+| Create a new rtlchange file | `06_skills/sle-build-rtlchanges-create.md` |
+| Refresh stale .ref / HSDs.toml | `06_skills/sle-build-rtlchanges-refresh.md` |
+| Fix missing global analysis/elab opts | `06_skills/sle-build-new-target-analysis-opts.md` |
 
 ## Directory Structure
 
@@ -59,15 +62,19 @@ NVL_AX_agent_workspace/
 ├── 04_monitoring/                       # Real-time pipeline monitoring
 │   ├── metrics_definition.md            # What to monitor (CPU, mem, logs)
 │   └── alert_thresholds.md              # When to intervene
-└── 05_knowledge_and_debugging/          # Living knowledge base
-    ├── debug_workflow.md                # Log analysis, phase detection &amp; triage
-    ├── common_patterns.md               # 21 recurring failure categories
-    ├── documentation_rules.md           # Standards + methodology creation protocol
-    ├── symptom_rules.txt               # Conditional symptom extraction config
-    ├── run_phase_detection_nvlax.sh    # Automated phase detection script
-    └── known_bugs_and_fixes/            # 34 individual bug reports
-        ├── bug_template.md              # Template with scoring headers
-        └── BUG-001..034_*.md            # One file per bug
+├── 05_knowledge_and_debugging/          # Living knowledge base
+│   ├── debug_workflow.md                # Log analysis, phase detection &amp; triage
+│   ├── common_patterns.md               # 21 recurring failure categories
+│   ├── documentation_rules.md           # Standards + methodology creation protocol
+│   ├── symptom_rules.txt               # Conditional symptom extraction config
+│   ├── run_phase_detection_nvlax.sh    # Automated phase detection script
+│   └── known_bugs_and_fixes/            # 34 individual bug reports
+│       ├── bug_template.md              # Template with scoring headers
+│       └── BUG-001..034_*.md            # One file per bug
+└── 06_skills/                           # Reusable agent skill guides
+    ├── sle-build-rtlchanges-create.md   # How to create new rtlchange files for emulation builds
+    ├── sle-build-rtlchanges-refresh.md  # Refreshing stale .ref files and HSDs.toml entries
+    └── sle-build-new-target-analysis-opts.md  # Fixing missing global analysis/elab opts for new targets
 ```
 
 ## AI Agent Instructions — MANDATORY
