@@ -1,16 +1,40 @@
 #!/usr/bin/env python3
 """
-Simregress Command Fixer
-Automatically fixes common simregress testlist command errors:
-- Bucket 1: Unpaired -simv_args-
-- Bucket 2: Unpaired -user_do_files_vcs-
-- Bucket 3: Missing -model argument
+SLE Emulation Command Fixer (NVL_AX / ZeBu ZSE5)
+
+Adapted from the PCH test-command-fixer for the SLE Emulation Agent.
+Automatically fixes common errors in simregress testlists and grdlbuild
+command lines used to compile and run DOA tests on NVL_AX models:
+
+  - Unpaired -trex / -trex- tag pairs (PCH equivalent: -simv_args)
+  - Missing -model / -emu_model argument
+  - Relative -include paths (prefix with $WORKAREA/)
+  - Invisible / special chars (zero-width, BOM, \\x00, ...)
+  - SLE safety red lines:
+      * BUG-001  -local flag in simregress (FORBIDDEN)
+      * BUG-002  EMUL_QSLOT=/prj/sv/nvl/showstopper (must be .../emu/interactive)
+      * BUG-003  Missing -P zsc11_express -Q /IVE/NVL/emu
+      * grdlbuild typos: -Penv=immidiate / -Penv=immedate -> -Penv=immediate
+      * Unknown / fuzzy grdlbuild target -> nearest valid SLE target
+
+Valid SLE emu models:
+  pkg_ghpf_model, pkg_chp_model_p2e4_fast,
+  pkg_chp_hubs_full_model_p2e4, pkg_chp_model_p2e4
 """
 
 import sys
 import re
 import argparse
 from pathlib import Path
+
+
+def _common_prefix(a, b):
+    """Return the common prefix of two strings (used for fuzzy target match)."""
+    n = min(len(a), len(b))
+    i = 0
+    while i < n and a[i] == b[i]:
+        i += 1
+    return a[:i]
 
 
 # ANSI Color codes for terminal highlighting
@@ -44,7 +68,7 @@ INVISIBLE_CHARS = {
 
 
 class SimregressCommandFixer:
-    def __init__(self, testlist_file, dry_run=False, default_model='fc_rtl_with_upf', auto_detect_model=True, workarea=None, apply_suggested=False, no_color=False):
+    def __init__(self, testlist_file, dry_run=False, default_model='pkg_chp_model_p2e4_fast', auto_detect_model=True, workarea=None, apply_suggested=False, no_color=False):
         self.testlist_file = Path(testlist_file)
         self.dry_run = dry_run
         self.default_model = default_model
@@ -68,14 +92,22 @@ class SimregressCommandFixer:
                 self.workarea = self._infer_workarea()
         
     def _infer_workarea(self):
-        """Infer WORKAREA from testlist path"""
-        # Common pattern: /path/to/workarea/testlist.list or /path/to/workarea/subdir/testlist.list
-        # Look for directories that look like a work area (contains common subdirs)
+        """Infer WORKAREA from testlist path.
+
+        For NVL_AX SLE workareas, look for a parent that contains the
+        canonical SLE subtrees: output/nvlsi7_n2p (emu build output),
+        reglist/nvlsi7_n2p (DOA reglists) and verif/emu (emu plugins).
+        """
         path = self.testlist_file.absolute()
-        
-        # Try to find directory containing common validation subdirs
+
+        sle_markers = [
+            ('output', 'nvlsi7_n2p'),
+            ('reglist', 'nvlsi7_n2p'),
+            ('verif', 'emu'),
+        ]
         for parent in path.parents:
-            if all((parent / subdir).exists() for subdir in ['subsystems', 'flows', 'verif']):
+            hits = sum(1 for a, b in sle_markers if (parent / a / b).exists())
+            if hits >= 2:
                 return parent
         
         # Fallback: use current directory
@@ -93,18 +125,18 @@ class SimregressCommandFixer:
     
 
     def fix_unpaired_simv_args(self, line):
-        """Fix unpaired -simv_args- closing tags and consecutive closing tags"""
+        """Fix unpaired -trex- closing tags and consecutive closing tags"""
         fixed_line = line
         issues = []
         
         # First, remove consecutive closing tags (these are always wrong)
-        consecutive_pattern = r'-simv_args-\s+-simv_args-'
+        consecutive_pattern = r'-trex-\s+-trex-'
         while re.search(consecutive_pattern, fixed_line):
-            fixed_line = re.sub(consecutive_pattern, '-simv_args-', fixed_line, count=1)
-            issues.append(f"Removed consecutive '-simv_args-' closing tag (unpaired)")
+            fixed_line = re.sub(consecutive_pattern, '-trex-', fixed_line, count=1)
+            issues.append(f"Removed consecutive '-trex-' closing tag (unpaired)")
         
-        # Pattern: standalone -simv_args- (not preceded by -simv_args with content)
-        # Look for -simv_args- that appears after another -simv_args-
+        # Pattern: standalone -trex- (not preceded by -trex with content)
+        # Look for -trex- that appears after another -trex-
         parts = fixed_line.split()
         filtered_parts = []
         i = 0
@@ -112,16 +144,16 @@ class SimregressCommandFixer:
         while i < len(parts):
             part = parts[i]
             
-            # Check if this is a standalone -simv_args-
-            if part == '-simv_args-':
-                # Look back to see if there's an unpaired -simv_args before this
+            # Check if this is a standalone -trex-
+            if part == '-trex-':
+                # Look back to see if there's an unpaired -trex before this
                 # Count open and close tags up to this point
-                open_count = filtered_parts.count('-simv_args')
-                close_count = filtered_parts.count('-simv_args-')
+                open_count = filtered_parts.count('-trex')
+                close_count = filtered_parts.count('-trex-')
                 
                 # If we have equal or more closes than opens, this is unpaired
                 if close_count >= open_count:
-                    issues.append(f"Removed unpaired '-simv_args-' at position {i}")
+                    issues.append(f"Removed unpaired '-trex-' at position {i}")
                     i += 1
                     continue
             
@@ -134,7 +166,7 @@ class SimregressCommandFixer:
         
         return line, []
     
-    def suggest_balanced_fix(self, line, tag_type='-simv_args'):
+    def suggest_balanced_fix(self, line, tag_type='-trex'):
         """Generate suggested fix for unbalanced paired tags with smart placement"""
         close_tag = f'{tag_type}-'
         parts = line.split()
@@ -231,7 +263,7 @@ class SimregressCommandFixer:
         
         return suggested_line, suggestion
     
-    def suggest_fix_missing_space(self, line, tag_type='-simv_args', position='after', tag_kind='open'):
+    def suggest_fix_missing_space(self, line, tag_type='-trex', position='after', tag_kind='open'):
         """Generate suggested fix for missing space around tags
         
         Args:
@@ -242,7 +274,7 @@ class SimregressCommandFixer:
         
         if tag_kind == 'open':
             if position == 'before':
-                # Pattern: text-simv_args (should be text -simv_args)
+                # Pattern: text-trex (should be text -trex)
                 # Use negative lookbehind to avoid matching closing tags
                 pattern = f'([^\\s])({re.escape(tag_type)})(?![\\-])'
                 
@@ -254,7 +286,7 @@ class SimregressCommandFixer:
                 suggestion = f"Add missing space before '{tag_type}' opening tag"
                 
             else:  # position == 'after'
-                # Pattern: -simv_args+runtime (should be -simv_args +runtime)
+                # Pattern: -trex+runtime (should be -trex +runtime)
                 pattern = f'{re.escape(tag_type)}([^\\s\\-])'
                 
                 if not re.search(pattern, line):
@@ -266,7 +298,7 @@ class SimregressCommandFixer:
         
         else:  # tag_kind == 'close'
             if position == 'before':
-                # Pattern: +opt-simv_args- (should be +opt -simv_args-)
+                # Pattern: +opt-trex- (should be +opt -trex-)
                 pattern = f'([^\\s\\-]){re.escape(close_tag)}'
                 
                 if not re.search(pattern, line):
@@ -277,7 +309,7 @@ class SimregressCommandFixer:
                 suggestion = f"Add missing space before '{close_tag}' closing tag"
                 
             else:  # position == 'after'
-                # Pattern: -simv_args-+opt (should be -simv_args- +opt)
+                # Pattern: -trex-+opt (should be -trex- +opt)
                 pattern = f'{re.escape(close_tag)}([^\\s])'
                 
                 if not re.search(pattern, line):
@@ -310,11 +342,11 @@ class SimregressCommandFixer:
         
         return suggested_line, suggestion
     
-    def suggest_fix_consecutive_tags(self, line, tag_type='-simv_args'):
+    def suggest_fix_consecutive_tags(self, line, tag_type='-trex'):
         """Generate suggested fix for consecutive opening tags (invalid nesting)"""
         close_tag = f'{tag_type}-'
         
-        # Pattern: -simv_args -simv_args (two consecutive opens)
+        # Pattern: -trex -trex (two consecutive opens)
         # Option 1: Remove the second open (most likely a typo)
         # Option 2: Add a close between them
         
@@ -329,11 +361,11 @@ class SimregressCommandFixer:
         
         return suggested_line, suggestion
     
-    def suggest_fix_consecutive_closes(self, line, tag_type='-simv_args'):
+    def suggest_fix_consecutive_closes(self, line, tag_type='-trex'):
         """Generate suggested fix for consecutive closing tags (unpaired close)"""
         close_tag = f'{tag_type}-'
         
-        # Pattern: -simv_args- -simv_args- (two consecutive closes)
+        # Pattern: -trex- -trex- (two consecutive closes)
         # Remove the second close (it's unpaired)
         
         pattern = f'{re.escape(close_tag)}\\s+{re.escape(close_tag)}'
@@ -390,43 +422,39 @@ class SimregressCommandFixer:
         return fixed_line, issues
     
     def auto_detect_model_from_testlist(self, lines):
-        """Auto-detect the model type used in other tests in the same testlist"""
+        """Auto-detect the emu_model used in other tests in the same testlist"""
         model_counts = {}
         
         for line in lines:
             if line.strip() and not line.strip().startswith('#'):
-                match = re.search(r'-model\s+(\S+)', line)
+                match = re.search(r'-emu_model\s+(\S+)', line)
                 if match:
                     model = match.group(1)
                     model_counts[model] = model_counts.get(model, 0) + 1
         
         if model_counts:
-            # Return the most common model
             most_common = max(model_counts.items(), key=lambda x: x[1])
             return most_common[0]
         
         return None
     
     def fix_missing_model(self, line):
-        """Fix missing -model argument"""
+        """Fix missing -emu_model argument on simregress lines"""
         issues = []
         
-        # Check if line has -dut but no -model
-        if '-dut' in line and '-model' not in line:
-            # Determine which model to use
+        # Only act on simregress lines that have -dut but no -emu_model
+        if 'simregress' in line and '-dut' in line and '-emu_model' not in line:
             model_to_use = self.detected_model if self.detected_model else self.default_model
             
-            # Find where to insert -model (after -dut pchlp)
             match = re.search(r'(-dut\s+\w+)', line)
             if match:
                 dut_arg = match.group(1)
-                # Insert -model after -dut argument
-                fixed_line = line.replace(dut_arg, f"{dut_arg} -model {model_to_use}")
+                fixed_line = line.replace(dut_arg, f"{dut_arg} -emu_model {model_to_use}")
                 
                 if self.detected_model:
-                    issues.append(f"Added missing '-model {model_to_use}' (auto-detected from testlist)")
+                    issues.append(f"Added missing '-emu_model {model_to_use}' (auto-detected from testlist)")
                 else:
-                    issues.append(f"Added missing '-model {model_to_use}' (using default)")
+                    issues.append(f"Added missing '-emu_model {model_to_use}' (using default)")
                 
                 return fixed_line, issues
         
@@ -711,13 +739,13 @@ class SimregressCommandFixer:
                 i += 1
             return ''.join(result)
     
-    def highlight_error_in_line(self, line, error_types, tag_type='-simv_args'):
+    def highlight_error_in_line(self, line, error_types, tag_type='-trex'):
         """Create a visual representation highlighting the error location with ANSI colors
         
         Args:
             line: The line to highlight
             error_types: Can be a string (single error) or list of errors
-            tag_type: The tag type being checked (default: '-simv_args')
+            tag_type: The tag type being checked (default: '-trex')
         """
         close_tag = f'{tag_type}-'
         parts = line.split()
@@ -768,25 +796,25 @@ class SimregressCommandFixer:
                     has_error = False
                     
                     # Check for various spacing violations in this token
-                    # 1. Opening tag glued to something before it (except at start): text-simv_args
+                    # 1. Opening tag glued to something before it (except at start): text-trex
                     if tag_type in part and part != tag_type and not part.startswith(tag_type):
                         idx = part.find(tag_type)
                         if idx > 0 and part[idx-1] != ' ':
                             has_error = True
                     
-                    # 2. Opening tag glued to something after it: -simv_args+opt or -simv_args-simv_args
+                    # 2. Opening tag glued to something after it: -trex+opt or -trex-trex
                     if part.startswith(tag_type) and len(part) > len(tag_type):
                         after_tag = part[len(tag_type):]
                         if not after_tag.startswith('-') or (after_tag.startswith('-') and len(after_tag) > 1):
                             has_error = True
                     
-                    # 3. Closing tag glued to something before it: +opt-simv_args- or -simv_args--simv_args-
+                    # 3. Closing tag glued to something before it: +opt-trex- or -trex--trex-
                     if close_tag in part and len(part) > len(close_tag):
                         idx = part.find(close_tag)
                         if idx > 0:
                             has_error = True
                     
-                    # 4. Closing tag glued to something after it: -simv_args-+opt or -simv_args-simv_args
+                    # 4. Closing tag glued to something after it: -trex-+opt or -trex-trex
                     if part.startswith(close_tag) and len(part) > len(close_tag):
                         has_error = True
                     
@@ -878,7 +906,7 @@ class SimregressCommandFixer:
         
         return result
     
-    def print_full_command_with_highlight(self, line, error_type, tag_type='-simv_args'):
+    def print_full_command_with_highlight(self, line, error_type, tag_type='-trex'):
         """Print the full command with error highlighting"""
         highlighted_line = self.highlight_error_in_line(line, error_type, tag_type)
         
@@ -956,9 +984,9 @@ class SimregressCommandFixer:
         """Validate that paired switches are balanced and properly nested
         
         Rule: ALL tags must have space BEFORE and AFTER them:
-        - Opening tags: SPACE -simv_args SPACE
-        - Closing tags: SPACE -simv_args- SPACE
-        - Plusargs: SPACE +DEFINE SPACE (inside -simv_args pairs)
+        - Opening tags: SPACE -trex SPACE
+        - Closing tags: SPACE -trex- SPACE
+        - Plusargs: SPACE +DEFINE SPACE (inside -trex pairs)
         """
         warnings = []
         
@@ -968,14 +996,14 @@ class SimregressCommandFixer:
             matches = re.findall(r'(\+[A-Z_0-9=]+\+[A-Z_0-9=]+)', line)
             warnings.append(f"⚠ ERROR: Missing space between plusargs (found: '{matches[0][:40]}...')")
         
-        # Check for missing space BEFORE opening tags (e.g., text-simv_args instead of text -simv_args)
+        # Check for missing space BEFORE opening tags (e.g., text-trex instead of text -trex)
         # Skip the start of line (allow tags at beginning)
-        if re.search(r'([^\s])-simv_args(\s|$)', line):
-            matches = re.findall(r'([^\s]+)-simv_args', line)
+        if re.search(r'([^\s])-trex(\s|$)', line):
+            matches = re.findall(r'([^\s]+)-trex', line)
             # Filter out closing tags (which end with -)
             non_close_matches = [m for m in matches if not m.endswith('-')]
             if non_close_matches:
-                warnings.append(f"⚠ ERROR: Missing space before '-simv_args' opening tag (found: '...{non_close_matches[0][-20:]}-simv_args')")
+                warnings.append(f"⚠ ERROR: Missing space before '-trex' opening tag (found: '...{non_close_matches[0][-20:]}-trex')")
         
         if re.search(r'([^\s])-user_do_files_vcs(\s|$)', line):
             matches = re.findall(r'([^\s]+)-user_do_files_vcs', line)
@@ -983,52 +1011,52 @@ class SimregressCommandFixer:
             if non_close_matches:
                 warnings.append(f"⚠ ERROR: Missing space before '-user_do_files_vcs' opening tag (found: '...{non_close_matches[0][-20:]}-user_do_files_vcs')")
         
-        # Check for missing space AFTER opening tags (e.g., -simv_args+runtime instead of -simv_args +runtime)
-        if re.search(r'-simv_args([^\s\-])', line):
-            matches = re.findall(r'-simv_args([^\s\-]+)', line)
-            warnings.append(f"⚠ ERROR: Missing space after '-simv_args' opening tag (found: '-simv_args{matches[0][:20]}...')")
+        # Check for missing space AFTER opening tags (e.g., -trex+runtime instead of -trex +runtime)
+        if re.search(r'-trex([^\s\-])', line):
+            matches = re.findall(r'-trex([^\s\-]+)', line)
+            warnings.append(f"⚠ ERROR: Missing space after '-trex' opening tag (found: '-trex{matches[0][:20]}...')")
         
         if re.search(r'-user_do_files_vcs([^\s\-])', line):
             matches = re.findall(r'-user_do_files_vcs([^\s\-]+)', line)
             warnings.append(f"⚠ ERROR: Missing space after '-user_do_files_vcs' opening tag (found: '-user_do_files_vcs{matches[0][:20]}...')")
         
-        # Check for missing space BEFORE closing tags (e.g., +opt-simv_args- instead of +opt -simv_args-)
-        if re.search(r'([^\s\-])-simv_args-', line):
-            matches = re.findall(r'([^\s\-]+)-simv_args-', line)
-            warnings.append(f"⚠ ERROR: Missing space before '-simv_args-' closing tag (found: '...{matches[0][-20:]}-simv_args-')")
+        # Check for missing space BEFORE closing tags (e.g., +opt-trex- instead of +opt -trex-)
+        if re.search(r'([^\s\-])-trex-', line):
+            matches = re.findall(r'([^\s\-]+)-trex-', line)
+            warnings.append(f"⚠ ERROR: Missing space before '-trex-' closing tag (found: '...{matches[0][-20:]}-trex-')")
         
         if re.search(r'([^\s\-])-user_do_files_vcs-', line):
             matches = re.findall(r'([^\s\-]+)-user_do_files_vcs-', line)
             warnings.append(f"⚠ ERROR: Missing space before '-user_do_files_vcs-' closing tag (found: '...{matches[0][-20:]}-user_do_files_vcs-')")
         
-        # Check for missing space AFTER closing tags (e.g., -simv_args-+opt instead of -simv_args- +opt)
-        if re.search(r'-simv_args-([^\s])', line):
-            matches = re.findall(r'-simv_args-([^\s]+)', line)
-            warnings.append(f"⚠ ERROR: Missing space after '-simv_args-' closing tag (found: '-simv_args-{matches[0][:20]}...')")
+        # Check for missing space AFTER closing tags (e.g., -trex-+opt instead of -trex- +opt)
+        if re.search(r'-trex-([^\s])', line):
+            matches = re.findall(r'-trex-([^\s]+)', line)
+            warnings.append(f"⚠ ERROR: Missing space after '-trex-' closing tag (found: '-trex-{matches[0][:20]}...')")
         
         if re.search(r'-user_do_files_vcs-([^\s])', line):
             matches = re.findall(r'-user_do_files_vcs-([^\s]+)', line)
             warnings.append(f"⚠ ERROR: Missing space after '-user_do_files_vcs-' closing tag (found: '-user_do_files_vcs-{matches[0][:20]}...')")
         
         # Check for consecutive opens (nested incorrectly)
-        if re.search(r'-simv_args\s+-simv_args\s+', line):
-            warnings.append(f"⚠ ERROR: Consecutive -simv_args tags without closing tag between them (invalid nesting)")
+        if re.search(r'-trex\s+-trex\s+', line):
+            warnings.append(f"⚠ ERROR: Consecutive -trex tags without closing tag between them (invalid nesting)")
         
         if re.search(r'-user_do_files_vcs\s+-user_do_files_vcs\s+', line):
             warnings.append(f"⚠ ERROR: Consecutive -user_do_files_vcs tags without closing tag between them (invalid nesting)")
         
         # Check for consecutive closes (unpaired closing tag)
-        if re.search(r'-simv_args-\s+-simv_args-', line):
-            warnings.append(f"⚠ ERROR: Consecutive -simv_args- closing tags (unpaired closing tag)")
+        if re.search(r'-trex-\s+-trex-', line):
+            warnings.append(f"⚠ ERROR: Consecutive -trex- closing tags (unpaired closing tag)")
         
         if re.search(r'-user_do_files_vcs-\s+-user_do_files_vcs-', line):
             warnings.append(f"⚠ ERROR: Consecutive -user_do_files_vcs- closing tags (unpaired closing tag)")
         
-        # Check -simv_args pairs balance (only if no nesting error)
-        simv_open = line.count('-simv_args ') + line.count('-simv_args\t')
-        simv_close = line.count('-simv_args-')
-        if simv_open != simv_close and not any('Consecutive -simv_args' in w for w in warnings):
-            warnings.append(f"⚠ Unbalanced -simv_args: {simv_open} open, {simv_close} close (may need manual review)")
+        # Check -trex pairs balance (only if no nesting error)
+        simv_open = line.count('-trex ') + line.count('-trex\t')
+        simv_close = line.count('-trex-')
+        if simv_open != simv_close and not any('Consecutive -trex' in w for w in warnings):
+            warnings.append(f"⚠ Unbalanced -trex: {simv_open} open, {simv_close} close (may need manual review)")
         
         # Check -user_do_files_vcs pairs balance
         udf_open = line.count('-user_do_files_vcs ') + line.count('-user_do_files_vcs\t')
@@ -1048,6 +1076,120 @@ class SimregressCommandFixer:
         
         return warnings
     
+    # ------------------------------------------------------------------
+    # SLE-specific safety detectors (NVL_AX / ZeBu ZSE5)
+    # ------------------------------------------------------------------
+    SLE_VALID_TARGETS = (
+        'pkg_ghpf_model_zse5',
+        'pkg_chp_model_p2e4_fast_zse5',
+        'pkg_chp_hubs_full_model_p2e4_zse5',
+        'pkg_chp_model_p2e4_zse5',
+    )
+    SLE_VALID_EMU_MODELS = (
+        'pkg_ghpf_model',
+        'pkg_chp_model_p2e4_fast',
+        'pkg_chp_hubs_full_model_p2e4',
+        'pkg_chp_model_p2e4',
+    )
+    SLE_REQUIRED_QSLOT = 'EMUL_QSLOT=/prj/sv/nvl/emu/interactive'
+    SLE_REQUIRED_PQ = ('-P', 'zsc11_express', '-Q', '/IVE/NVL/emu')
+
+    def fix_sle_safety(self, line):
+        """SLE-specific auto-fixes for simregress / grdlbuild commands.
+
+        Catches the documented red lines:
+          BUG-001: -local flag in simregress (forbidden) -> strip
+          BUG-002: EMUL_QSLOT=.../showstopper -> .../emu/interactive
+          BUG-003: missing -P zsc11_express -Q /IVE/NVL/emu -> append
+                   (only when the line clearly contains a simregress invocation)
+          grdlbuild typos: -Penv=immidiate / -Penv=immedate -> -Penv=immediate
+          Unknown grdlbuild target (under :emu_build:zebu:) -> fuzzy-suggest
+            the nearest valid SLE target (suggestion only, never auto-applied).
+        """
+        issues = []
+        suggestions = []
+        fixed = line
+
+        is_simregress = 'simregress' in fixed
+        is_grdlbuild  = 'grdlbuild'  in fixed
+
+        # --- BUG-001: -local in simregress ---
+        if is_simregress and re.search(r'(?<!\S)-local(?!\S)', fixed):
+            fixed = re.sub(r'\s+-local(?=\s|$)', '', fixed)
+            fixed = re.sub(r'-local\s+', '', fixed)
+            issues.append("BUG-001: stripped forbidden '-local' flag from simregress")
+
+        # --- BUG-002: showstopper queue ---
+        if 'EMUL_QSLOT=' in fixed and 'showstopper' in fixed:
+            fixed = re.sub(
+                r'EMUL_QSLOT=\S*showstopper\S*',
+                'EMUL_QSLOT=/prj/sv/nvl/emu/interactive',
+                fixed,
+            )
+            issues.append("BUG-002: replaced EMUL_QSLOT=.../showstopper with /prj/sv/nvl/emu/interactive")
+
+        # --- BUG-002b: simregress without any EMUL_QSLOT -> append ---
+        if is_simregress and 'EMUL_QSLOT=' not in fixed:
+            # Append before the trailing `-l <reglist>` if present, else at end.
+            m = re.search(r'\s-l\s+\S+', fixed)
+            insertion = ' ' + self.SLE_REQUIRED_QSLOT
+            if m:
+                fixed = fixed[:m.start()] + insertion + fixed[m.start():]
+            else:
+                fixed = fixed.rstrip('\n').rstrip() + insertion + ('\n' if line.endswith('\n') else '')
+            issues.append(f"BUG-002: appended required {self.SLE_REQUIRED_QSLOT}")
+
+        # --- BUG-003: missing -P/-Q on simregress ---
+        if is_simregress:
+            need_P = not re.search(r'(?<!\S)-P\s+zsc11_express\b', fixed)
+            need_Q = not re.search(r'(?<!\S)-Q\s+/IVE/NVL/emu\b', fixed)
+            if need_P or need_Q:
+                add = []
+                if need_P: add += ['-P', 'zsc11_express']
+                if need_Q: add += ['-Q', '/IVE/NVL/emu']
+                addition = ' ' + ' '.join(add)
+                m = re.search(r'\s-l\s+\S+', fixed)
+                if m:
+                    fixed = fixed[:m.start()] + addition + fixed[m.start():]
+                else:
+                    nl = '\n' if fixed.endswith('\n') else ''
+                    fixed = fixed.rstrip('\n').rstrip() + addition + nl
+                issues.append(f"BUG-003: added missing {' '.join(add)}")
+
+        # --- grdlbuild -Penv typo ---
+        if is_grdlbuild:
+            penv_typos = (
+                ('-Penv=immidiate',  '-Penv=immediate'),
+                ('-Penv=immedate',   '-Penv=immediate'),
+                ('-Penv=imediate',   '-Penv=immediate'),
+                ('-Penv=immeidate',  '-Penv=immediate'),
+            )
+            for bad, good in penv_typos:
+                if bad in fixed:
+                    fixed = fixed.replace(bad, good)
+                    issues.append(f"grdlbuild: fixed typo '{bad}' -> '{good}'")
+
+        # --- grdlbuild unknown target (suggestion only) ---
+        if is_grdlbuild:
+            m = re.search(r':emu_build:zebu:(\S+)', fixed)
+            if m:
+                tgt = m.group(1)
+                # Strip any trailing _post_zcui — that's a valid suffix variant
+                base = tgt[:-len('_post_zcui')] if tgt.endswith('_post_zcui') else tgt
+                if base not in self.SLE_VALID_TARGETS:
+                    # Pick the valid target with the longest common prefix.
+                    best = max(self.SLE_VALID_TARGETS,
+                               key=lambda v: len(_common_prefix(base, v)))
+                    if _common_prefix(base, best):
+                        suggestions.append(
+                            f"grdlbuild: target '{tgt}' is not a known SLE target. "
+                            f"Did you mean ':emu_build:zebu:{best}'? "
+                            f"Valid: {', '.join(self.SLE_VALID_TARGETS)}"
+                        )
+
+        return fixed, issues, suggestions
+
+
     def fix_line(self, line, line_num):
         """Apply all fixes to a single line"""
         original_line = line
@@ -1071,9 +1213,16 @@ class SimregressCommandFixer:
         # Apply fixes in order
         line, issues = self.fix_unpaired_simv_args(line)
         all_issues.extend(issues)
-        
+
         line, issues = self.fix_unpaired_user_do_files(line)
         all_issues.extend(issues)
+
+        # SLE safety net: -local, EMUL_QSLOT, -P/-Q, -Penv typos, grdlbuild targets.
+        line, sle_issues, sle_suggestions = self.fix_sle_safety(line)
+        all_issues.extend(sle_issues)
+        # SLE suggestions are display-only (no auto-apply for fuzzy target match).
+        for s in sle_suggestions:
+            all_issues.append(f"⚠ {s}")
         
         line, issues = self.fix_missing_model(line)
         all_issues.extend(issues)
@@ -1100,32 +1249,32 @@ class SimregressCommandFixer:
                 # Priority order (most critical to least):
                 if any('Missing space between plusargs' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_plusargs_spacing(current_line)
-                elif any('Missing space before \'-simv_args\' opening tag' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-simv_args', 'before', 'open')
+                elif any('Missing space before \'-trex\' opening tag' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-trex', 'before', 'open')
                 elif any('Missing space before \'-user_do_files_vcs\' opening tag' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-user_do_files_vcs', 'before', 'open')
-                elif any('Missing space after \'-simv_args\' opening tag' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-simv_args', 'after', 'open')
+                elif any('Missing space after \'-trex\' opening tag' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-trex', 'after', 'open')
                 elif any('Missing space after \'-user_do_files_vcs\' opening tag' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-user_do_files_vcs', 'after', 'open')
-                elif any('Missing space before \'-simv_args-\' closing tag' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-simv_args', 'before', 'close')
+                elif any('Missing space before \'-trex-\' closing tag' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-trex', 'before', 'close')
                 elif any('Missing space before \'-user_do_files_vcs-\' closing tag' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-user_do_files_vcs', 'before', 'close')
-                elif any('Missing space after \'-simv_args-\' closing tag' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-simv_args', 'after', 'close')
+                elif any('Missing space after \'-trex-\' closing tag' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-trex', 'after', 'close')
                 elif any('Missing space after \'-user_do_files_vcs-\' closing tag' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_missing_space(current_line, '-user_do_files_vcs', 'after', 'close')
-                elif any('Consecutive -simv_args tags without closing tag between them' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_consecutive_tags(current_line, '-simv_args')
+                elif any('Consecutive -trex tags without closing tag between them' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_consecutive_tags(current_line, '-trex')
                 elif any('Consecutive -user_do_files_vcs tags without closing tag between them' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_consecutive_tags(current_line, '-user_do_files_vcs')
-                elif any('Consecutive -simv_args- closing tags' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_fix_consecutive_closes(current_line, '-simv_args')
+                elif any('Consecutive -trex- closing tags' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_fix_consecutive_closes(current_line, '-trex')
                 elif any('Consecutive -user_do_files_vcs- closing tags' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_fix_consecutive_closes(current_line, '-user_do_files_vcs')
-                elif any('Unbalanced -simv_args' in w for w in warnings):
-                    temp_fix, temp_desc = self.suggest_balanced_fix(current_line, '-simv_args')
+                elif any('Unbalanced -trex' in w for w in warnings):
+                    temp_fix, temp_desc = self.suggest_balanced_fix(current_line, '-trex')
                 elif any('Unbalanced -user_do_files_vcs' in w for w in warnings):
                     temp_fix, temp_desc = self.suggest_balanced_fix(current_line, '-user_do_files_vcs')
                 
@@ -1163,38 +1312,38 @@ class SimregressCommandFixer:
                 suggested_fix, suggestion_desc = self.suggest_fix_plusargs_spacing(line)
             
             # Opening tag spacing issues
-            elif any('Missing space before \'-simv_args\' opening tag' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-simv_args', 'before', 'open')
+            elif any('Missing space before \'-trex\' opening tag' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-trex', 'before', 'open')
             elif any('Missing space before \'-user_do_files_vcs\' opening tag' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-user_do_files_vcs', 'before', 'open')
-            elif any('Missing space after \'-simv_args\' opening tag' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-simv_args', 'after', 'open')
+            elif any('Missing space after \'-trex\' opening tag' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-trex', 'after', 'open')
             elif any('Missing space after \'-user_do_files_vcs\' opening tag' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-user_do_files_vcs', 'after', 'open')
             
             # Closing tag spacing issues
-            elif any('Missing space before \'-simv_args-\' closing tag' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-simv_args', 'before', 'close')
+            elif any('Missing space before \'-trex-\' closing tag' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-trex', 'before', 'close')
             elif any('Missing space before \'-user_do_files_vcs-\' closing tag' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-user_do_files_vcs', 'before', 'close')
-            elif any('Missing space after \'-simv_args-\' closing tag' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-simv_args', 'after', 'close')
+            elif any('Missing space after \'-trex-\' closing tag' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-trex', 'after', 'close')
             elif any('Missing space after \'-user_do_files_vcs-\' closing tag' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_missing_space(line, '-user_do_files_vcs', 'after', 'close')
             
             # Structural issues
-            elif any('Consecutive -simv_args tags without closing tag between them' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_consecutive_tags(line, '-simv_args')
+            elif any('Consecutive -trex tags without closing tag between them' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_consecutive_tags(line, '-trex')
             elif any('Consecutive -user_do_files_vcs tags without closing tag between them' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_consecutive_tags(line, '-user_do_files_vcs')
-            elif any('Consecutive -simv_args- closing tags' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_fix_consecutive_closes(line, '-simv_args')
+            elif any('Consecutive -trex- closing tags' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_fix_consecutive_closes(line, '-trex')
             elif any('Consecutive -user_do_files_vcs- closing tags' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_fix_consecutive_closes(line, '-user_do_files_vcs')
             
             # Balance issues
-            elif any('Unbalanced -simv_args' in w for w in warnings):
-                suggested_fix, suggestion_desc = self.suggest_balanced_fix(line, '-simv_args')
+            elif any('Unbalanced -trex' in w for w in warnings):
+                suggested_fix, suggestion_desc = self.suggest_balanced_fix(line, '-trex')
             elif any('Unbalanced -user_do_files_vcs' in w for w in warnings):
                 suggested_fix, suggestion_desc = self.suggest_balanced_fix(line, '-user_do_files_vcs')
         
@@ -1292,7 +1441,7 @@ class SimregressCommandFixer:
                             print(f"   {issue}")
                 
                 # Determine tag type for highlighting
-                tag_type = '-simv_args'
+                tag_type = '-trex'
                 if any('user_do_files' in issue for issue in issues):
                     tag_type = '-user_do_files_vcs'
                 
@@ -1364,7 +1513,7 @@ class SimregressCommandFixer:
             'Applied suggested fix' not in issue
             for issue in fix['issues']))
         bucket1_warnings = sum(1 for fix in self.fixes_applied if any(
-            '⚠ Unbalanced -simv_args' in issue or '⚠ ERROR: Consecutive -simv_args' in issue 
+            '⚠ Unbalanced -trex' in issue or '⚠ ERROR: Consecutive -trex' in issue 
             for issue in fix['issues']))
         bucket2_fixed = sum(1 for fix in self.fixes_applied if any(
             'user_do_files' in issue and 
@@ -1392,7 +1541,7 @@ class SimregressCommandFixer:
         print(f"Total lines with issues: {len(self.fixes_applied)}")
         print(f"\nIssue breakdown:")
         if bucket1_fixed > 0:
-            print(f"  • Bucket 1 (unpaired -simv_args-): {bucket1_fixed} fixed")
+            print(f"  • Bucket 1 (unpaired -trex-): {bucket1_fixed} fixed")
         if bucket2_fixed > 0:
             print(f"  • Bucket 2 (unpaired -user_do_files_vcs-): {bucket2_fixed} fixed")
         if bucket3 > 0:
@@ -1400,7 +1549,7 @@ class SimregressCommandFixer:
         if bucket4 > 0:
             print(f"  • Bucket 4 (relative -include paths): {bucket4} fixed")
         if bucket1_warnings > 0:
-            print(f"  • Warnings (unbalanced -simv_args): {bucket1_warnings} need manual review")
+            print(f"  • Warnings (unbalanced -trex): {bucket1_warnings} need manual review")
         if bucket2_warnings > 0:
             print(f"  • Warnings (unbalanced -user_do_files_vcs-): {bucket2_warnings} need manual review")
         if bucket4_warnings > 0:
@@ -1445,37 +1594,43 @@ class SimregressCommandFixer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Fix simregress testlist command errors',
+        description='Fix SLE emulation (simregress / grdlbuild) command errors — NVL_AX, ZeBu ZSE5',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Preview changes (default - no file modification)
-  %(prog)s testlist.list
-  
+  %(prog)s reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list
+
   # Apply automatic fixes only (modify file)
-  %(prog)s testlist.list --apply
-  
-  # Apply all fixes including suggested fixes (modify file)
-  %(prog)s testlist.list --apply-suggested
-  
-  # Apply fixes with specific model type
-  %(prog)s testlist.list --apply --model fc_dfd_rtl_with_upf
-  
-  # List available models
+  %(prog)s reglist.list --apply
+
+  # Apply all fixes including suggested (spacing/balance) fixes
+  %(prog)s reglist.list --apply-suggested
+
+  # Apply fixes with explicit emu_model
+  %(prog)s reglist.list --apply --model pkg_chp_model_p2e4
+
+  # List the 4 valid SLE emu_models / grdlbuild targets
   %(prog)s --list-models
-  
-Fixes applied with --apply:
-  - Bucket 1: Remove unpaired -simv_args- closing tags
-  - Bucket 2: Remove unpaired -user_do_files_vcs- closing tags
-  - Bucket 3: Add missing -model argument (auto-detected or specified)
-  - Bucket 4: Fix relative -include paths (add $WORKAREA/ prefix)
-  - Remove special characters (e.g., \\x00)
-  
-Additional fixes with --apply-suggested:
-  - Balance unbalanced -simv_args pairs (smart placement)
-  - Balance unbalanced -user_do_files_vcs pairs (smart placement)
-  - Fix spacing violations around tags
-  - Fix consecutive opening tags
+
+Auto-fixes applied with --apply:
+  - Remove unpaired -trex- closing tags
+  - Add missing -model / -emu_model argument (auto-detected or specified)
+  - Fix relative -include paths (add $WORKAREA/ prefix)
+  - Remove invisible/special characters (zero-width, BOM, \\x00, ...)
+  - BUG-001: strip forbidden '-local' flag from simregress
+  - BUG-002: replace EMUL_QSLOT=.../showstopper with .../emu/interactive
+             (and append EMUL_QSLOT=.../emu/interactive if missing from simregress)
+  - BUG-003: append missing '-P zsc11_express -Q /IVE/NVL/emu' to simregress
+  - grdlbuild: fix -Penv typos (immidiate / immedate / imediate -> immediate)
+
+Additional with --apply-suggested:
+  - Balance unbalanced -trex pairs (smart placement)
+  - Fix spacing violations around -trex / -trex- tags
+  - Fix consecutive opening / closing tags
+
+Suggestions only (never auto-applied):
+  - Unknown grdlbuild target -> nearest valid SLE target (manual review)
         """
     )
     
@@ -1489,8 +1644,8 @@ Additional fixes with --apply-suggested:
                        help='Disable ANSI color output (for terminals without color support)')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Verbose output')
-    parser.add_argument('--model', '-m', default='fc_rtl_with_upf',
-                       help='Default model type to use if auto-detection fails (default: fc_rtl_with_upf)')
+    parser.add_argument('--model', '-m', default='pkg_chp_model_p2e4_fast',
+                       help='Default emu_model to use if auto-detection fails (default: pkg_chp_model_p2e4_fast)')
     parser.add_argument('--no-auto-detect', action='store_true',
                        help='Disable auto-detection of model type from testlist')
     parser.add_argument('--list-models', action='store_true',
@@ -1502,27 +1657,20 @@ Additional fixes with --apply-suggested:
     
     # Handle --list-models
     if args.list_models:
-        print("\nCommon Model Types (from cfg/grdlbuild/common/build.gradle.kts):")
+        print("\nNVL_AX SLE Emulation Models (-emu_model values):")
         print("="*70)
         models = [
-            'fc_rtl_with_upf',
-            'fc_rtl_with_upf_pli',
-            'fc_rtl_with_upf_xprop',
-            'fc_rtl',
-            'fc_rtl_pli',
-            'fc_dfd_rtl_with_upf',
-            'fc_dfts_with_upf',
-            'fc_dfts_rtl',
-            'fc_real_mia_with_upf',
-            'fc_real_mia_with_upf_pli',
-            'fc_rtl_ref_with_upf',
-            'fc_rtl_minval',
-            'fc_rtl_debug_all',
-            'fc_rtl_with_upf_debug_all'
+            ('pkg_ghpf_model',               'GHPF emulation model'),
+            ('pkg_chp_model_p2e4_fast',      'CHP fast (ZSE5)'),
+            ('pkg_chp_hubs_full_model_p2e4', 'CHP full with hubs (ZSE5)'),
+            ('pkg_chp_model_p2e4',           'CHP standard (ZSE5)'),
         ]
-        for model in models:
-            print(f"  • {model}")
-        print("\nNote: Auto-detection will use the most common model found in your testlist.")
+        for m, d in models:
+            print(f"  • {m:<32s} — {d}")
+        print("\ngrdlbuild build targets (add `_zse5` suffix):")
+        for m, _ in models:
+            print(f"  • {m}_zse5")
+        print("\nNote: Auto-detection will use the most common -emu_model found in your testlist.")
         print("      Use --model to override if auto-detection is not suitable.\n")
         return
     
