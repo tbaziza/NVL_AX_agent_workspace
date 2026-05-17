@@ -16,7 +16,9 @@ tags: [commands, shell, reference, grdlbuild, simregress, nbstatus]
 |---------------|-------------------|----------------|------------|
 | `pkg_ghpf_model_zse5` | `pkg_ghpf_model` | `doa_pkg_ghpf_model_zse5.list` | ghpf |
 | `pkg_chp_model_p2e4_fast_zse5` | `pkg_chp_model_p2e4_fast` | `doa_pkg_chp_model_p2e4_fast_zse5.list` | chp_p2e4_fast |
+| `pkg_chp_model_p2e4_fast_zse4` | `pkg_chp_model_p2e4_fast` | `doa_pkg_chp_model_p2e4_fast_zse4.list` | chp_p2e4_fast (zse4) |
 | `pkg_chp_hubs_full_model_p2e4_zse5` | `pkg_chp_hubs_full_model_p2e4` | `doa_pkg_chp_hubs_full_model_p2e4_zse5.list` | chp_hubs_full_p2e4 |
+| `pkg_chp_hubs_full_model_p2e4_zse4` | `pkg_chp_hubs_full_model_p2e4` | `doa_pkg_chp_hubs_full_model_p2e4_zse4.list` | chp_hubs_full_p2e4 (zse4) |
 | `pkg_chp_model_p2e4_zse5` | `pkg_chp_model_p2e4` | `doa_pkg_chp_model_p2e4_zse5.list` | chp_p2e4 |
 
 ## Build Commands

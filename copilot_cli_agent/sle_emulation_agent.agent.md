@@ -62,7 +62,9 @@ Once found, set `KB_ROOT` to that path and use `$KB_ROOT` in all subsequent comm
 |-------|-------------|-------------|
 | ghpf | `pkg_ghpf_model_zse5` | `pkg_ghpf_model` |
 | chp_p2e4_fast | `pkg_chp_model_p2e4_fast_zse5` | `pkg_chp_model_p2e4_fast` |
+| chp_p2e4_fast (zse4) | `pkg_chp_model_p2e4_fast_zse4` | `pkg_chp_model_p2e4_fast` |
 | chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4_zse5` | `pkg_chp_hubs_full_model_p2e4` |
+| chp_hubs_full_p2e4 (zse4) | `pkg_chp_hubs_full_model_p2e4_zse4` | `pkg_chp_hubs_full_model_p2e4` |
 | chp_p2e4 | `pkg_chp_model_p2e4_zse5` | `pkg_chp_model_p2e4` |
 
 If the user specifies a model not in this list, ask for the exact grdlbuild target name.
@@ -152,7 +154,9 @@ When the user says "compile" or "build", you must know which model. If not clear
 |-------|-------------|
 | ghpf | `pkg_ghpf_model_zse5` |
 | chp_p2e4_fast | `pkg_chp_model_p2e4_fast_zse5` |
+| chp_p2e4_fast (zse4) | `pkg_chp_model_p2e4_fast_zse4` |
 | chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4_zse5` |
+| chp_hubs_full_p2e4 (zse4) | `pkg_chp_hubs_full_model_p2e4_zse4` |
 | chp_p2e4 | `pkg_chp_model_p2e4_zse5` |
 
 > If the model is not listed above, ask the user for the exact grdlbuild target name.
@@ -252,12 +256,14 @@ The `-emu_model` flag must match the model you compiled. If unsure, **ask the us
 
 **Model to `-emu_model` mapping:**
 
-| Model | `-emu_model` value | DOA reglist |
-|-------|--------------------|-------------|
-| ghpf | `pkg_ghpf_model` | `reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list` |
-| chp_p2e4_fast | `pkg_chp_model_p2e4_fast` | ask user for reglist path |
-| chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4` | ask user for reglist path |
-| chp_p2e4 | `pkg_chp_model_p2e4` | ask user for reglist path |
+| Model | `-emu_model` value | `-emu_tech` | DOA reglist |
+|-------|--------------------|-------------|-------------|
+| ghpf | `pkg_ghpf_model` | `zse5` | `reglist/nvlsi7_n2p/emu/doa_pkg_ghpf_model_zse5.list` |
+| chp_p2e4_fast | `pkg_chp_model_p2e4_fast` | `zse5` | `reglist/nvlsi7_n2p/emu/doa_pkg_chp_model_p2e4_fast_zse5.list` |
+| chp_p2e4_fast (zse4) | `pkg_chp_model_p2e4_fast` | `zse4` | `reglist/nvlsi7_n2p/emu/doa_pkg_chp_model_p2e4_fast_zse4.list` |
+| chp_hubs_full_p2e4 | `pkg_chp_hubs_full_model_p2e4` | `zse5` | `reglist/nvlsi7_n2p/emu/doa_pkg_chp_hubs_full_model_p2e4_zse5.list` |
+| chp_hubs_full_p2e4 (zse4) | `pkg_chp_hubs_full_model_p2e4` | `zse4` | `reglist/nvlsi7_n2p/emu/doa_pkg_chp_hubs_full_model_p2e4_zse4.list` |
+| chp_p2e4 | `pkg_chp_model_p2e4` | `zse5` | `reglist/nvlsi7_n2p/emu/doa_pkg_chp_model_p2e4_zse5.list` |
 
 ```bash
 cd $MODEL_ROOT
