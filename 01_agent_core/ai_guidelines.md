@@ -85,8 +85,14 @@ When you encounter a situation where you don't know the correct shell command:
 2. Check disk space: `df -h /nfs/site/disks/ive_sle_zsc11_yarombar | tail -1`
 3. Check Kerberos: `klist 2>&1 | grep -E "Expires|>>>"`
 4. Check what's running: `nbq -u yarombar 2>/dev/null | head -10`
-5. Check last build status: `ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/ | wc -l` (19 = complete)
-   > Example for ghpf: `ls output/nvlsi7_n2p/emu/zebu_zebu/pkg_ghpf_model/zse5/.shadow/ | wc -l`
+5. Check last build status:
+   ```bash
+   # Shadow files (19 = all stages complete)
+   ls output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.shadow/ | wc -l
+   # VALID gate — must say YES before running tests
+   grep -E "^\s*VALID\s*[:=]" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.build_info.yml
+   ```
+   > Example for ghpf: replace `<EMU_MODEL>` with `pkg_ghpf_model`. Expected: `19` shadows and `VALID: YES`.
 
 ## Expert Debug Heuristics (Extracted from ai_picker_sle Reference)
 
