@@ -92,7 +92,8 @@ When you encounter a situation where you don't know the correct shell command:
    # VALID gate — must say YES before running tests
    grep -E "^\s*VALID\s*[:=]" output/nvlsi7_n2p/emu/zebu_zebu/<EMU_MODEL>/zse5/.build_info.yml
    ```
-   > Example for ghpf: replace `<EMU_MODEL>` with `pkg_ghpf_model`. Expected: `19` shadows and `VALID: YES`.
+   > **Note:** the technology subdir may be `zse5` **or** `zse4` depending on the build platform — replace accordingly.
+   > Example for ghpf on zse5: replace `<EMU_MODEL>` with `pkg_ghpf_model`. Expected: `19` shadows and `VALID: YES`.
 
 ## Expert Debug Heuristics (Extracted from ai_picker_sle Reference)
 
